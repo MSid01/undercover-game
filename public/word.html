@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Undercover - Your Word</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Crimson+Pro:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0a0a0f;
+      --bg-card: #12121a;
+      --bg-elevated: #1a1a25;
+      --accent-primary: #e63946;
+      --accent-secondary: #f4a261;
+      --accent-civilian: #2a9d8f;
+      --text-primary: #f8f9fa;
+      --text-secondary: #adb5bd;
+      --text-muted: #6c757d;
+      --border-color: #2d2d3a;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Outfit', -apple-system, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .container {
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+    
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      padding: 32px 24px;
+    }
+    
+    .logo {
+      font-size: 3rem;
+      margin-bottom: 8px;
+    }
+    
+    .title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: var(--accent-secondary);
+    }
+    
+    .player-name {
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: var(--accent-secondary);
+      margin-bottom: 24px;
+    }
+    
+    .instruction {
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+    }
+    
+    .word-display {
+      font-family: 'Crimson Pro', serif;
+      font-size: 3rem;
+      font-weight: 600;
+      color: var(--accent-civilian);
+      background: rgba(42, 157, 143, 0.1);
+      padding: 20px 30px;
+      border-radius: var(--radius-lg);
+      margin-bottom: 24px;
+      box-shadow: 0 0 40px rgba(42, 157, 143, 0.2);
+    }
+    
+    .mrwhite-display {
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    
+    .mrwhite-icon {
+      font-size: 4rem;
+      margin-bottom: 12px;
+    }
+    
+    .mrwhite-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    .mrwhite-text {
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 16px 32px;
+      border: none;
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      width: 100%;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-primary), #c1121f);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(230, 57, 70, 0.3);
+    }
+    
+    .btn-secondary {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+    
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border-color);
+      border-top-color: var(--accent-secondary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .success-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: var(--accent-civilian);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      margin: 0 auto 16px;
+    }
+    
+    .error-icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+    }
+    
+    .hint {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      margin-top: 16px;
+    }
+    
+    .keep-hint {
+      color: var(--accent-secondary);
+      font-weight: 500;
+      margin-top: 12px;
+    }
+    
+    .hidden { display: none !important; }
+    
+    /* States */
+    .state { display: none; }
+    .state.active { display: block; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <!-- Loading State -->
+      <div id="loading-state" class="state active">
+        <div class="logo">🎭</div>
+        <div class="spinner"></div>
+        <p class="instruction">Loading your word...</p>
+      </div>
+      
+      <!-- Ready State -->
+      <div id="ready-state" class="state">
+        <div class="logo">🎭</div>
+        <p class="instruction">Welcome,</p>
+        <h2 id="player-name" class="player-name">Player</h2>
+        <p class="instruction">Make sure no one is looking!</p>
+        <button id="show-word-btn" class="btn btn-primary">
+          👁️ Show My Word
+        </button>
+      </div>
+      
+      <!-- Word State -->
+      <div id="word-state" class="state">
+        <p class="instruction">Your secret word is</p>
+        <div id="word-display" class="word-display">Word</div>
+        <p class="hint">Memorize it!</p>
+        <button id="confirm-btn" class="btn btn-secondary">
+          ✓ Got it! I've memorized it
+        </button>
+      </div>
+      
+      <!-- Mr. White State -->
+      <div id="mrwhite-state" class="state">
+        <div class="mrwhite-display">
+          <div class="mrwhite-icon">👻</div>
+          <h3 class="mrwhite-title">You are Mr. White</h3>
+          <p class="mrwhite-text">
+            You don't have a word!<br>
+            Listen to others and try to blend in.
+          </p>
+        </div>
+        <button id="mrwhite-confirm-btn" class="btn btn-secondary">
+          ✓ Got it!
+        </button>
+      </div>
+      
+      <!-- Done State -->
+      <div id="done-state" class="state">
+        <div class="success-icon">✓</div>
+        <h2 class="title">Word Memorized!</h2>
+        <p class="instruction">Return to the main device to continue.</p>
+        <p class="keep-hint">Keep this page open for next rounds!</p>
+      </div>
+      
+      <!-- Waiting State (for next round) -->
+      <div id="waiting-state" class="state">
+        <div class="logo">⏳</div>
+        <h2 class="title">Waiting for Next Round</h2>
+        <p class="instruction">Your new word will appear automatically!</p>
+        <p class="keep-hint">Keep this page open.</p>
+      </div>
+      
+      <!-- Error State -->
+      <div id="error-state" class="state">
+        <div class="error-icon">❌</div>
+        <h2 class="title">Invalid Link</h2>
+        <p id="error-message" class="instruction">This link is invalid or has expired.</p>
+        <button class="btn btn-primary" onclick="window.location.href='/'">
+          Go to Home
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    // State
+    let socket = null;
+    let myToken = null;
+    let myName = null;
+    let myWord = null;
+    let myRole = null;
+    
+    const STORAGE_KEY = 'undercover_my_token';
+    
+    // DOM helpers
+    function showState(stateId) {
+      document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
+      document.getElementById(stateId).classList.add('active');
+    }
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('t');
+      
+      if (token) {
+        claimWordWithToken(token);
+      } else {
+        // Check for saved token
+        const savedToken = localStorage.getItem(STORAGE_KEY);
+        if (savedToken) {
+          reconnectWithToken(savedToken);
+        } else {
+          showState('error-state');
+          document.getElementById('error-message').textContent = 'No token provided. Please scan the QR code.';
+        }
+      }
+      
+      // Button listeners
+      document.getElementById('show-word-btn').addEventListener('click', showWord);
+      document.getElementById('confirm-btn').addEventListener('click', confirmWord);
+      document.getElementById('mrwhite-confirm-btn').addEventListener('click', confirmWord);
+    });
+    
+    function initSocket() {
+      if (socket) return;
+      socket = io();
+      
+      socket.on('connect', () => {
+        console.log('Connected to server');
+      });
+      
+      // New round word received
+      socket.on('new-round-word', (data) => {
+        console.log('New round word received:', data);
+        myWord = data.word;
+        myRole = data.role;
+        showState('ready-state');
+      });
+      
+      // Room closed
+      socket.on('room-closed', (data) => {
+        localStorage.removeItem(STORAGE_KEY);
+        showState('error-state');
+        document.getElementById('error-message').textContent = data.reason || 'Game session ended.';
+      });
+    }
+    
+    function claimWordWithToken(token) {
+      showState('loading-state');
+      initSocket();
+      
+      socket.emit('claim-by-token', { token }, (response) => {
+        console.log('Claim response:', response);
+        
+        if (response.success) {
+          myToken = token;
+          myName = response.playerName;
+          myWord = response.word;
+          myRole = response.role;
+          
+          // Save token
+          localStorage.setItem(STORAGE_KEY, token);
+          
+          // Clear URL parameter
+          window.history.replaceState({}, document.title, '/word');
+          
+          if (response.reconnected) {
+            // Already seen, show waiting
+            showState('waiting-state');
+          } else {
+            // Show ready state
+            document.getElementById('player-name').textContent = myName;
+            showState('ready-state');
+          }
+        } else {
+          showState('error-state');
+          document.getElementById('error-message').textContent = response.error || 'Invalid or expired token.';
+        }
+      });
+    }
+    
+    function reconnectWithToken(token) {
+      showState('loading-state');
+      initSocket();
+      
+      socket.emit('reconnect-with-token', { token }, (response) => {
+        console.log('Reconnect response:', response);
+        
+        if (response.success) {
+          myToken = token;
+          myName = response.playerName;
+          showState('waiting-state');
+        } else {
+          localStorage.removeItem(STORAGE_KEY);
+          showState('error-state');
+          document.getElementById('error-message').textContent = 'Session expired. Please scan a new QR code.';
+        }
+      });
+    }
+    
+    function showWord() {
+      if (myRole === 'mrwhite') {
+        showState('mrwhite-state');
+      } else {
+        document.getElementById('word-display').textContent = myWord;
+        showState('word-state');
+      }
+    }
+    
+    function confirmWord() {
+      // Notify server
+      socket.emit('token-word-seen', { token: myToken });
+      showState('done-state');
+    }
+  </script>
+</body>
+</html>
+

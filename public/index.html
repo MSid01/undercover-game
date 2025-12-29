@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Undercover - Word Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Crimson+Pro:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <div class="bg-pattern"></div>
+    
+    <!-- 1. Landing Screen -->
+    <div id="landing-screen" class="screen active">
+      <div class="container center-content">
+        <div class="landing-content">
+          <div class="logo-container">
+            <div class="logo-icon">🎭</div>
+            <h1 class="title">UNDERCOVER</h1>
+            <p class="tagline">A game of words & deception</p>
+          </div>
+          
+          <div id="resume-game-section" class="resume-game-section hidden">
+            <div class="resume-card">
+              <div class="resume-header">
+                <span class="resume-icon">⏸️</span>
+                <span class="resume-title">Game in Progress</span>
+              </div>
+              <p id="resume-round-info" class="resume-info">Game Round 1 • 4 players</p>
+              <p id="resume-players-preview" class="resume-players"></p>
+              <div class="resume-actions">
+                <button id="resume-game-btn" class="btn btn-primary">▶ Resume</button>
+                <button id="discard-session-btn" class="btn btn-ghost btn-small">Discard</button>
+              </div>
+            </div>
+          </div>
+          
+          <button id="play-btn" class="btn btn-primary btn-large btn-glow">
+            <span class="btn-icon">▶</span> New Game
+          </button>
+          
+          <button id="how-to-play-btn" class="btn btn-ghost">How to Play?</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Mode Selection Screen -->
+    <div id="mode-screen" class="screen">
+      <div class="container">
+        <button class="back-btn" data-back="landing">← Back</button>
+        
+        <header class="screen-header">
+          <h2>Select Mode</h2>
+          <p>Choose how you want to play</p>
+        </header>
+
+        <div class="mode-cards">
+          <div class="mode-card" id="offline-mode-card">
+            <div class="mode-icon">📱</div>
+            <h3>Offline</h3>
+            <p>Pass & Play on one device</p>
+            <span class="mode-badge available">Available</span>
+          </div>
+          
+          <div class="mode-card" id="online-mode-card">
+            <div class="mode-icon">🌐</div>
+            <h3>Online</h3>
+            <p>Each player uses their own phone</p>
+            <span class="mode-badge available">Available</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Online Choice Screen (Host or Join) -->
+    <div id="online-choice-screen" class="screen">
+      <div class="container">
+        <button class="back-btn" data-back="mode">← Back</button>
+        
+        <header class="screen-header">
+          <h2>Online Mode</h2>
+          <p>Host a game or join an existing room</p>
+        </header>
+
+        <div class="online-choice-cards">
+          <div class="choice-card" id="host-game-card">
+            <div class="choice-icon">👑</div>
+            <h3>Host Game</h3>
+            <p>Create a room and invite others</p>
+          </div>
+          
+          <div class="choice-card" id="join-game-card">
+            <div class="choice-icon">🔗</div>
+            <h3>Join Game</h3>
+            <p>Enter a room code to join</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Token Word Screen (auto-loads from QR scan URL) -->
+    <div id="token-word-screen" class="screen">
+      <div class="container center-content">
+        <div class="online-word-card">
+          <!-- Loading state -->
+          <div id="token-loading" class="word-state">
+            <div class="spinner"></div>
+            <p>Loading your word...</p>
+          </div>
+          
+          <!-- Ready to reveal -->
+          <div id="token-word-ready" class="word-state hidden">
+            <div class="player-greeting">
+              <p>Welcome,</p>
+              <h2 id="token-player-name">Player</h2>
+            </div>
+            <div class="tap-to-reveal">
+              <div class="eye-icon">👁️</div>
+              <p>Tap below to see your secret word</p>
+              <p class="privacy-hint">Make sure no one is looking!</p>
+            </div>
+            <button id="show-token-word-btn" class="btn btn-primary btn-large">
+              Show My Word
+            </button>
+          </div>
+          
+          <!-- Word shown -->
+          <div id="token-word-shown" class="word-state hidden">
+            <p class="reveal-label">Your secret word is</p>
+            <div id="token-word-display" class="word-display"></div>
+            <p class="memorize-hint">Memorize it!</p>
+            <button id="confirm-token-word-btn" class="btn btn-secondary btn-large">
+              Got it! I've memorized it
+            </button>
+          </div>
+          
+          <!-- Mr. White -->
+          <div id="token-mrwhite-state" class="word-state hidden">
+            <div class="mrwhite-icon">👻</div>
+            <h2>You are Mr. White</h2>
+            <p class="mrwhite-description">
+              You don't have a word!<br>
+              Listen to others and try to blend in.
+            </p>
+            <button id="confirm-token-mrwhite-btn" class="btn btn-secondary btn-large">
+              Got it!
+            </button>
+          </div>
+          
+          <!-- Error state -->
+          <div id="token-error" class="word-state hidden">
+            <div class="error-icon">❌</div>
+            <h2>Invalid Link</h2>
+            <p id="token-error-message">This link is invalid or has expired.</p>
+            <button class="btn btn-primary" onclick="showScreen('landing')">Go to Home</button>
+          </div>
+        </div>
+
+        <!-- Confirmed state -->
+        <div id="token-word-done" class="word-confirmed hidden">
+          <div class="confirmed-icon">✓</div>
+          <h3>Word memorized!</h3>
+          <p class="waiting-text">Return to the main device to continue.</p>
+          <p class="keep-open-hint">Keep this page open for next rounds!</p>
+        </div>
+        
+        <!-- Waiting for next round -->
+        <div id="token-waiting-round" class="word-confirmed hidden">
+          <div class="waiting-icon">⏳</div>
+          <h3>Waiting for next round...</h3>
+          <p class="waiting-text">The host will start the next round soon.</p>
+          <p class="keep-open-hint">Your new word will appear automatically!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Join Room Screen (Online mode) -->
+    <div id="join-room-screen" class="screen">
+      <div class="container center-content">
+        <div class="join-room-content">
+          <header class="screen-header">
+            <h2>Join Room</h2>
+            <p>Enter the room code shared by the host</p>
+          </header>
+
+          <div class="join-form">
+            <div class="code-input-group">
+              <input type="text" id="room-code-input" class="code-input" placeholder="ABCD" maxlength="4" autocomplete="off">
+            </div>
+            
+            <input type="text" id="join-player-name-input" class="name-input" placeholder="Your name" maxlength="20" autocomplete="off">
+            
+            <button id="join-room-btn" class="btn btn-primary btn-large">Join Room</button>
+            
+            <p id="join-error" class="error-message hidden"></p>
+          </div>
+          
+          <button class="btn btn-ghost" onclick="showScreen('landing')">← Back to Home</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Host Setup Screen -->
+    <div id="host-setup-screen" class="screen">
+      <div class="container">
+        <button class="back-btn" data-back="online-choice">← Back</button>
+        
+        <header class="screen-header">
+          <h2>Host Setup</h2>
+          <p>Configure the game settings</p>
+        </header>
+
+        <div class="host-setup-card">
+          <input type="text" id="host-name-input" class="name-input" placeholder="Your name (Host)" maxlength="20" autocomplete="off">
+          
+          <div class="setting-row">
+            <label>Players</label>
+            <div class="inline-stepper">
+              <button class="stepper-btn" id="host-decrease-players">−</button>
+              <span id="host-player-count">4</span>
+              <button class="stepper-btn" id="host-increase-players">+</button>
+            </div>
+          </div>
+          
+          <div class="setting-row">
+            <label>Undercover</label>
+            <div class="inline-stepper">
+              <button class="stepper-btn" id="host-decrease-undercover">−</button>
+              <span id="host-undercover-count">1</span>
+              <button class="stepper-btn" id="host-increase-undercover">+</button>
+            </div>
+          </div>
+          
+          <div class="setting-row">
+            <label>Mr. White</label>
+            <div class="inline-stepper">
+              <button class="stepper-btn" id="host-decrease-mrwhite">−</button>
+              <span id="host-mrwhite-count">0</span>
+              <button class="stepper-btn" id="host-increase-mrwhite">+</button>
+            </div>
+          </div>
+          
+          <button id="create-room-btn" class="btn btn-primary btn-large">Create Room</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. Host Lobby Screen -->
+    <div id="host-lobby-screen" class="screen">
+      <div class="container center-content">
+        <div class="lobby-content">
+          <div class="room-code-display">
+            <p class="room-code-label">Room Code</p>
+            <h1 id="display-room-code" class="room-code">ABCD</h1>
+            <p class="room-code-hint">Share this code with other players</p>
+          </div>
+
+          <div class="lobby-players">
+            <div class="lobby-header">
+              <h3>Players</h3>
+              <span id="lobby-player-count" class="player-count-badge">1/4</span>
+            </div>
+            <div id="lobby-players-list" class="lobby-players-list"></div>
+          </div>
+
+          <div class="lobby-settings-summary">
+            <span>🕵️ <span id="lobby-undercover-count">1</span> Undercover</span>
+            <span>👻 <span id="lobby-mrwhite-count">0</span> Mr. White</span>
+          </div>
+
+          <button id="start-online-game-btn" class="btn btn-primary btn-large btn-glow" disabled>
+            Waiting for players...
+          </button>
+          
+          <button id="close-room-btn" class="btn btn-ghost">Close Room</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 8. Player Lobby Screen (for joined players) -->
+    <div id="player-lobby-screen" class="screen">
+      <div class="container center-content">
+        <div class="lobby-content">
+          <div class="joined-badge">
+            <span class="check-icon">✓</span>
+            <span>Joined!</span>
+          </div>
+          
+          <div class="room-info">
+            <p class="room-code-label">Room</p>
+            <h2 id="player-room-code" class="room-code-small">ABCD</h2>
+          </div>
+
+          <div class="lobby-players">
+            <div class="lobby-header">
+              <h3>Players</h3>
+              <span id="player-lobby-count" class="player-count-badge">1/4</span>
+            </div>
+            <div id="player-lobby-list" class="lobby-players-list"></div>
+          </div>
+
+          <div class="waiting-message">
+            <div class="spinner-small"></div>
+            <p>Waiting for host to start the game...</p>
+          </div>
+          
+          <button id="leave-room-btn" class="btn btn-ghost">Leave Room</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 9. Online Word Reveal Screen (for players) -->
+    <div id="online-word-screen" class="screen">
+      <div class="container center-content">
+        <div class="online-word-card">
+          <div id="online-word-hidden" class="word-state">
+            <div class="tap-to-reveal">
+              <div class="eye-icon">👁️</div>
+              <h2>Tap to Reveal Your Word</h2>
+              <p>Make sure no one is looking!</p>
+            </div>
+            <button id="reveal-online-word-btn" class="btn btn-primary btn-large">
+              Show My Word
+            </button>
+          </div>
+          
+          <div id="online-word-shown" class="word-state hidden">
+            <p class="reveal-label">Your secret word is</p>
+            <div id="online-word-display" class="word-display"></div>
+            <p class="memorize-hint">Memorize it!</p>
+            <button id="hide-online-word-btn" class="btn btn-secondary btn-large">
+              Got it! Hide Word
+            </button>
+          </div>
+          
+          <div id="online-mrwhite-state" class="word-state hidden">
+            <div class="mrwhite-icon">👻</div>
+            <h2>You are Mr. White</h2>
+            <p class="mrwhite-description">
+              You don't have a word!<br>
+              Listen to others and try to blend in.
+            </p>
+            <button id="mrwhite-online-continue-btn" class="btn btn-secondary btn-large">
+              Got it!
+            </button>
+          </div>
+        </div>
+
+        <div id="online-word-confirmed" class="word-confirmed hidden">
+          <div class="confirmed-icon">✓</div>
+          <p>Word memorized!</p>
+          <p class="waiting-text">Waiting for other players...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 10. Host Game Control Screen -->
+    <div id="host-game-screen" class="screen">
+      <div class="container">
+        <header class="game-header-bar">
+          <span id="host-round-badge" class="round-badge">Round 1</span>
+          <span class="phase-badge">Discussion</span>
+        </header>
+
+        <div class="host-game-card">
+          <div class="reveal-progress-section">
+            <h3>Word Reveal Progress</h3>
+            <div class="progress-bar">
+              <div id="host-reveal-progress" class="progress-fill" style="width: 0%"></div>
+            </div>
+            <p id="host-reveal-text">0 / 4 players have seen their word</p>
+          </div>
+
+          <div id="host-discussion-section" class="hidden">
+            <h2>🗣️ Discussion Time</h2>
+            <div class="speaking-order">
+              <h4 class="section-label">Speaking Order</h4>
+              <div id="host-speaking-order" class="speaking-order-list"></div>
+            </div>
+            
+            <button id="host-elimination-btn" class="btn btn-danger btn-large">
+              🗳️ Proceed to Elimination
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== OFFLINE MODE SCREENS ========== -->
+    
+    <!-- Offline: Player Setup Screen -->
+    <div id="player-setup-screen" class="screen">
+      <div class="container">
+        <button class="back-btn" data-back="mode">← Back</button>
+        
+        <header class="screen-header">
+          <h2>Player Setup</h2>
+          <p>Start fresh or use a saved group</p>
+        </header>
+
+        <div id="saved-groups-section" class="saved-groups-section">
+          <h3 class="section-title">📁 Saved Groups</h3>
+          <div id="saved-groups-list" class="saved-groups-list"></div>
+          <p id="no-groups-message" class="empty-message hidden">No saved groups yet</p>
+        </div>
+
+        <div class="divider-with-text"><span>or</span></div>
+
+        <button id="start-fresh-btn" class="btn btn-primary btn-large">✨ Start Fresh</button>
+      </div>
+    </div>
+
+    <!-- Offline: Player Count Screen -->
+    <div id="player-count-screen" class="screen">
+      <div class="container">
+        <button class="back-btn" data-back="player-setup">← Back</button>
+        
+        <header class="screen-header">
+          <h2>How many players?</h2>
+          <p>Select the total number of players</p>
+        </header>
+
+        <div class="count-selector">
+          <button class="count-btn decrease" id="decrease-players">−</button>
+          <div class="count-display">
+            <span id="player-count-value" class="count-value">4</span>
+            <span class="count-label">Players</span>
+          </div>
+          <button class="count-btn increase" id="increase-players">+</button>
+        </div>
+
+        <div class="player-count-hint">
+          <span class="hint-text">Minimum 3 players required</span>
+        </div>
+
+        <button id="continue-to-roles-btn" class="btn btn-primary btn-large">Continue</button>
+      </div>
+    </div>
+
+    <!-- Offline: Role Configuration Screen -->
+    <div id="role-config-screen" class="screen">
+      <div class="container">
+        <button class="back-btn" data-back="player-count">← Back</button>
+        
+        <header class="screen-header">
+          <h2>Configure Roles</h2>
+          <p>Set up the infiltrators</p>
+        </header>
+
+        <div class="role-summary">
+          <div class="summary-item">
+            <span class="summary-label">Total Players</span>
+            <span id="total-players-display" class="summary-value">4</span>
+          </div>
+        </div>
+
+        <div class="role-config-cards">
+          <div class="role-config-card">
+            <div class="role-header">
+              <div class="role-icon undercover">🕵️</div>
+              <div class="role-info">
+                <h3>Undercover</h3>
+                <p>Gets a similar but different word</p>
+              </div>
+            </div>
+            <div class="role-stepper">
+              <button class="stepper-btn" data-action="decrease" data-target="undercover">−</button>
+              <span id="undercover-count" class="stepper-value">1</span>
+              <button class="stepper-btn" data-action="increase" data-target="undercover">+</button>
+            </div>
+          </div>
+
+          <div class="role-config-card">
+            <div class="role-header">
+              <div class="role-icon mrwhite">👻</div>
+              <div class="role-info">
+                <h3>Mr. White</h3>
+                <p>Gets no word, must bluff</p>
+              </div>
+            </div>
+            <div class="role-stepper">
+              <button class="stepper-btn" data-action="decrease" data-target="mrwhite">−</button>
+              <span id="mrwhite-count" class="stepper-value">0</span>
+              <button class="stepper-btn" data-action="increase" data-target="mrwhite">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="role-distribution">
+          <h4>Role Distribution</h4>
+          <div class="distribution-bar">
+            <div id="civilian-bar" class="bar-segment civilian" style="width: 75%">
+              <span class="bar-label"><span id="civilian-count">3</span> Civilians</span>
+            </div>
+            <div id="undercover-bar" class="bar-segment undercover" style="width: 25%">
+              <span class="bar-label"><span id="undercover-bar-count">1</span></span>
+            </div>
+            <div id="mrwhite-bar" class="bar-segment mrwhite" style="width: 0%">
+              <span class="bar-label"><span id="mrwhite-bar-count">0</span></span>
+            </div>
+          </div>
+        </div>
+
+        <div id="role-warning" class="warning-message hidden">
+          <span class="warning-icon">⚠️</span>
+          <span class="warning-text">Need at least 2 civilians!</span>
+        </div>
+
+        <button id="continue-to-names-btn" class="btn btn-primary btn-large">Continue</button>
+      </div>
+    </div>
+
+    <!-- Offline: Name Entry Screen -->
+    <div id="name-entry-screen" class="screen">
+      <div class="container">
+        <button class="back-btn" data-back="role-config">← Back</button>
+        
+        <header class="screen-header">
+          <h2>Enter Player Names</h2>
+          <p id="name-entry-progress">Player 1 of 4</p>
+        </header>
+
+        <div class="name-entry-card">
+          <div class="player-number-badge" id="current-player-number">1</div>
+          <input type="text" id="player-name-input" class="name-input" placeholder="Enter name..." maxlength="20" autocomplete="off">
+          <button id="add-name-btn" class="btn btn-primary btn-large">
+            <span id="add-name-btn-text">Next Player</span>
+          </button>
+        </div>
+
+        <div id="recent-names-section" class="recent-names-section hidden">
+          <h4 class="section-label">Quick Add</h4>
+          <div id="recent-names-list" class="recent-names-list"></div>
+        </div>
+
+        <div class="current-names-section">
+          <div class="names-list-header"><h4 class="section-label">Players Added</h4></div>
+          <div class="names-list" id="names-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Offline: Ready Screen -->
+    <div id="ready-screen" class="screen">
+      <div class="container center-content">
+        <div class="ready-content">
+          <div class="ready-icon">🎲</div>
+          <h2>Everyone Ready?</h2>
+          <p id="game-round-info" class="game-round-info">Game Round 1</p>
+          
+          <div class="ready-players">
+            <h4>Players</h4>
+            <div id="ready-players-list" class="ready-players-list"></div>
+          </div>
+
+          <div id="save-group-section" class="save-group-section">
+            <button id="save-group-btn" class="btn btn-secondary">💾 Save as Group</button>
+          </div>
+
+          <button id="start-reveal-btn" class="btn btn-primary btn-large btn-glow">Start Game</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Offline: Word Reveal Screen (with QR code) -->
+    <div id="reveal-screen" class="screen">
+      <div class="container center-content">
+        <div class="reveal-card">
+          <!-- Pass to player state -->
+          <div id="reveal-pass" class="reveal-state">
+            <div class="pass-icon">📱</div>
+            <p class="pass-instruction">Pass the device to</p>
+            <h2 id="reveal-player-name" class="player-name-large"></h2>
+            
+            <div class="reveal-options">
+              <button id="im-ready-btn" class="btn btn-primary btn-large">
+                I'm <span id="reveal-player-name-btn"></span> - Show My Word
+              </button>
+              
+              <div class="reveal-or-divider">
+                <span>or scan with your phone</span>
+              </div>
+              
+              <div id="qr-option-section" class="qr-option-section">
+                <div class="qr-code-container">
+                  <img id="player-qr-code" class="qr-code-img" src="" alt="QR Code">
+                </div>
+                <p class="qr-hint">Scan to see your word privately</p>
+                <button id="player-used-phone-btn" class="btn btn-secondary">
+                  ✓ I've seen it on my phone
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Word shown state -->
+          <div id="reveal-word" class="reveal-state hidden">
+            <p class="reveal-label">Your secret word is</p>
+            <div id="word-display" class="word-display"></div>
+            <p class="memorize-hint">Memorize it! You won't see it again.</p>
+            <button id="hide-word-btn" class="btn btn-secondary btn-large">Got it! Hide Word</button>
+          </div>
+
+          <!-- Mr. White state -->
+          <div id="reveal-mrwhite" class="reveal-state hidden">
+            <div class="mrwhite-icon">👻</div>
+            <h2>You are Mr. White</h2>
+            <p class="mrwhite-description">
+              You don't have a word!<br>
+              Listen to others and try to blend in.<br>
+              If caught, guess the civilian word to win!
+            </p>
+            <button id="mrwhite-got-it-btn" class="btn btn-secondary btn-large">Got it! I'll bluff my way through</button>
+          </div>
+        </div>
+
+        <div class="reveal-progress">
+          <div class="progress-bar">
+            <div id="reveal-progress-fill" class="progress-fill"></div>
+          </div>
+          <p id="reveal-progress-text" class="progress-text"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Offline: Discussion Screen -->
+    <div id="discussion-screen" class="screen">
+      <div class="container">
+        <header class="game-header-bar">
+          <span id="round-badge" class="round-badge">Round 1</span>
+          <span class="phase-badge">Discussion</span>
+        </header>
+
+        <div class="discussion-card">
+          <h2>🗣️ Discussion Time</h2>
+          <p class="discussion-instruction">Players describe their word in this order.<br>Be creative but don't give it away!</p>
+
+          <div class="speaking-order">
+            <h4 class="section-label">Speaking Order</h4>
+            <div id="speaking-order-list" class="speaking-order-list"></div>
+          </div>
+
+          <div class="discussion-tips">
+            <p><strong>Tips:</strong> Use metaphors, related concepts, or feelings about your word.</p>
+          </div>
+
+          <button id="start-elimination-btn" class="btn btn-danger btn-large">🗳️ Proceed to Elimination</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Offline: Elimination Screen -->
+    <div id="elimination-screen" class="screen">
+      <div class="container">
+        <header class="game-header-bar">
+          <span class="round-badge">Round <span id="elim-round">1</span></span>
+          <span class="phase-badge voting">Elimination</span>
+        </header>
+
+        <div class="elimination-card">
+          <h2>🎯 Who got voted out?</h2>
+          <p class="elimination-instruction">After real-world voting, select the eliminated player:</p>
+          <div id="elimination-options" class="elimination-options"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Offline: Role Reveal Screen -->
+    <div id="role-reveal-screen" class="screen">
+      <div class="container center-content">
+        <div class="role-reveal-card">
+          <h2 id="revealed-player-name"></h2>
+          <p>was a...</p>
+          
+          <div id="revealed-role" class="revealed-role">
+            <span class="role-emoji" id="revealed-role-emoji"></span>
+            <span class="role-name" id="revealed-role-name"></span>
+          </div>
+
+          <div id="mrwhite-guess-section" class="mrwhite-guess hidden">
+            <h3>🎯 Mr. White's Last Chance!</h3>
+            <p>Guess the civilian word to steal the win!</p>
+            <input type="text" id="mrwhite-guess-input" class="guess-input" placeholder="Enter your guess...">
+            <button id="submit-guess-btn" class="btn btn-primary">Submit Guess</button>
+          </div>
+
+          <button id="continue-game-btn" class="btn btn-primary btn-large">Continue</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Offline: Game Over Screen -->
+    <div id="gameover-screen" class="screen">
+      <div class="container center-content">
+        <div class="gameover-card">
+          <p id="session-round-display" class="session-round-label">Game Round 1 Complete</p>
+          
+          <div id="winner-banner" class="winner-banner">
+            <span class="winner-emoji" id="winner-emoji">🎉</span>
+            <h1 id="winner-title"></h1>
+            <p id="winner-subtitle"></p>
+          </div>
+
+          <div class="words-reveal-section">
+            <h3>The Words Were</h3>
+            <div class="final-words">
+              <div class="final-word civilian">
+                <span class="word-type">Civilian</span>
+                <span id="final-civilian-word" class="word-text"></span>
+              </div>
+              <div class="final-word undercover">
+                <span class="word-type">Undercover</span>
+                <span id="final-undercover-word" class="word-text"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="points-section">
+            <h3>🏆 Scoreboard</h3>
+            <div id="points-list" class="points-list"></div>
+          </div>
+
+          <button id="play-again-btn" class="btn btn-primary btn-large btn-glow">🔄 Next Round</button>
+          <button id="end-session-btn" class="btn btn-ghost">End Session & Save Stats</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== MODALS ========== -->
+    
+    <!-- How to Play Modal -->
+    <div id="how-to-play-modal" class="modal hidden">
+      <div class="modal-content">
+        <button class="modal-close" id="close-modal">×</button>
+        <h2>How to Play</h2>
+        
+        <div class="rules-section">
+          <h3>🎭 Roles</h3>
+          <ul>
+            <li><strong>Civilians:</strong> Get the same word</li>
+            <li><strong>Undercover:</strong> Gets a similar but different word</li>
+            <li><strong>Mr. White:</strong> Gets no word at all!</li>
+          </ul>
+        </div>
+
+        <div class="rules-section">
+          <h3>🎯 Objective</h3>
+          <ul>
+            <li><strong>Civilians:</strong> Find and eliminate all infiltrators</li>
+            <li><strong>Undercover:</strong> Stay hidden until you outnumber civilians</li>
+            <li><strong>Mr. White:</strong> Survive or guess the civilian word if caught</li>
+          </ul>
+        </div>
+
+        <div class="rules-section">
+          <h3>📋 Gameplay</h3>
+          <ol>
+            <li>Each player secretly views their word</li>
+            <li>Take turns describing your word (without saying it!)</li>
+            <li>Vote in real life to eliminate who you suspect</li>
+            <li>Repeat until a team wins</li>
+          </ol>
+        </div>
+
+        <div class="rules-section">
+          <h3>🏆 Points</h3>
+          <ul>
+            <li><strong>Civilians win:</strong> All civilians get 2 pts</li>
+            <li><strong>Infiltrators win:</strong> Remaining Undercover 10 pts, Mr. White 6 pts</li>
+            <li><strong>Mr. White guesses:</strong> Only that Mr. White gets 12 pts</li>
+          </ul>
+        </div>
+
+        <button class="btn btn-primary" id="got-rules-btn">Got it!</button>
+      </div>
+    </div>
+
+    <!-- Save Group Modal -->
+    <div id="save-group-modal" class="modal hidden">
+      <div class="modal-content modal-small">
+        <button class="modal-close" id="close-save-modal">×</button>
+        <h2>💾 Save Group</h2>
+        <p class="modal-description">Give this group a name to quickly load it later.</p>
+        <input type="text" id="group-name-input" class="name-input" placeholder="e.g., Family, Office..." maxlength="30">
+        <div class="modal-actions">
+          <button id="cancel-save-btn" class="btn btn-secondary">Cancel</button>
+          <button id="confirm-save-btn" class="btn btn-primary">Save Group</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Modal -->
+    <div id="stats-modal" class="modal hidden">
+      <div class="modal-content">
+        <button class="modal-close" id="close-stats-modal">×</button>
+        <h2>📊 Player Stats</h2>
+        <div id="stats-content"></div>
+      </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+      <div class="loading-content">
+        <div class="spinner"></div>
+        <p id="loading-text">Loading...</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
