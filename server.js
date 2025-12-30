@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -6,6 +7,8 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import QRCode from 'qrcode';
 import { v4 as uuidv4 } from 'uuid';
+import { getRandomPair, getPairCount, runGeneration } from './db/word-generator.js';
+import { startCron, stopCron } from './db/cron.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -25,13 +28,13 @@ const PORT = process.env.PORT || 3000;
 const rooms = new Map();
 const playerTokens = new Map(); // token -> { roomCode, playerName, word, role, socketId }
 
-// Static word pairs
-const WORD_PAIRS = [
-  { civilianWord: 'Cat', undercoverWord: 'Dog', category: 'Pets' },
-  { civilianWord: 'Pizza', undercoverWord: 'Burger', category: 'Fast Food' },
-  { civilianWord: 'Malaysia', undercoverWord: 'Thailand', category: 'Southeast Asian Countries' },
-  { civilianWord: 'Snake', undercoverWord: 'Eel', category: 'Long Creatures' },
-  { civilianWord: 'Guitar', undercoverWord: 'Ukulele', category: 'String Instruments' },
+// Fallback static word pairs (used if database is empty)
+const FALLBACK_WORD_PAIRS = [
+  { civilianWord: 'Cat', undercoverWord: 'Dog' },
+  { civilianWord: 'Pizza', undercoverWord: 'Burger' },
+  { civilianWord: 'Malaysia', undercoverWord: 'Thailand' },
+  { civilianWord: 'Snake', undercoverWord: 'Eel' },
+  { civilianWord: 'Guitar', undercoverWord: 'Ukulele' },
 ];
 
 // Generate random room code
@@ -52,9 +55,15 @@ function generatePlayerToken() {
   return uuidv4().replace(/-/g, '').substring(0, 12);
 }
 
-// Get random word pair
+// Get random word pair (from database or fallback)
 function getRandomWordPair() {
-  return WORD_PAIRS[Math.floor(Math.random() * WORD_PAIRS.length)];
+  // Try database first
+  const dbPair = getRandomPair();
+  if (dbPair) {
+    return dbPair;
+  }
+  // Fallback to static pairs
+  return FALLBACK_WORD_PAIRS[Math.floor(Math.random() * FALLBACK_WORD_PAIRS.length)];
 }
 
 // Shuffle array
@@ -98,7 +107,47 @@ app.post('/api/generate-words', (req, res) => {
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', rooms: rooms.size, tokens: playerTokens.size, timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'OK', 
+    rooms: rooms.size, 
+    tokens: playerTokens.size, 
+    wordPairs: getPairCount(),
+    timestamp: new Date().toISOString() 
+  });
+});
+
+// Word pairs stats
+app.get('/api/words/stats', (req, res) => {
+  res.json({ 
+    count: getPairCount(),
+    hasGroqKey: !!process.env.GROQ_API_KEY
+  });
+});
+
+// Manually trigger word generation (for testing)
+app.post('/api/words/generate', async (req, res) => {
+  try {
+    const result = await runGeneration();
+    res.json({ 
+      success: true, 
+      ...result,
+      totalCount: getPairCount()
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Stop the cron job
+app.post('/api/cron/stop', (req, res) => {
+  const stopped = stopCron();
+  res.json({ success: stopped, message: stopped ? 'Cron stopped' : 'Cron was not running' });
+});
+
+// Start the cron job
+app.post('/api/cron/start', (req, res) => {
+  startCron();
+  res.json({ success: true, message: 'Cron started' });
 });
 
 // Serve frontend
@@ -607,6 +656,10 @@ server.listen(PORT, () => {
   console.log(`🎭 Undercover Game Server running on http://localhost:${PORT}`);
   console.log(`🔌 Socket.io enabled for real-time gameplay`);
   console.log(`📱 QR code generation enabled`);
+  console.log(`📊 Word pairs in database: ${getPairCount()}`);
+  
+  // Start cron job for word generation
+  startCron();
 });
 
 export default app;

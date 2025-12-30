@@ -29,6 +29,8 @@ build/
 *.tmp
 *.temp
 
-#node modules
-node_modules/
+# Database
+db/*.db
+db/*.db-wal
+db/*.db-shm
 
