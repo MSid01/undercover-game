@@ -29,7 +29,7 @@ build/
 *.tmp
 *.temp
 
-# Database
+# Database (local SQLite - no longer used)
 db/*.db
 db/*.db-wal
 db/*.db-shm

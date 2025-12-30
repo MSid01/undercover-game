@@ -56,9 +56,9 @@ function generatePlayerToken() {
 }
 
 // Get random word pair (from database or fallback)
-function getRandomWordPair() {
+async function getRandomWordPair() {
   // Try database first
-  const dbPair = getRandomPair();
+  const dbPair = await getRandomPair();
   if (dbPair) {
     return dbPair;
   }
@@ -99,27 +99,27 @@ app.use(express.json());
 app.use(express.static(join(__dirname, 'public')));
 
 // REST API - Generate words (for offline mode)
-app.post('/api/generate-words', (req, res) => {
-  const wordPair = getRandomWordPair();
+app.post('/api/generate-words', async (req, res) => {
+  const wordPair = await getRandomWordPair();
   console.log(`🎲 Selected word pair: ${wordPair.civilianWord} / ${wordPair.undercoverWord}`);
   res.json(wordPair);
 });
 
 // Health check
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
   res.json({ 
     status: 'OK', 
     rooms: rooms.size, 
     tokens: playerTokens.size, 
-    wordPairs: getPairCount(),
+    wordPairs: await getPairCount(),
     timestamp: new Date().toISOString() 
   });
 });
 
 // Word pairs stats
-app.get('/api/words/stats', (req, res) => {
+app.get('/api/words/stats', async (req, res) => {
   res.json({ 
-    count: getPairCount(),
+    count: await getPairCount(),
     hasGroqKey: !!process.env.GROQ_API_KEY
   });
 });
@@ -131,7 +131,7 @@ app.post('/api/words/generate', async (req, res) => {
     res.json({ 
       success: true, 
       ...result,
-      totalCount: getPairCount()
+      totalCount: await getPairCount()
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -487,7 +487,7 @@ io.on('connection', (socket) => {
   });
 
   // HOST: Start the game (online mode)
-  socket.on('start-game', (callback) => {
+  socket.on('start-game', async (callback) => {
     const room = rooms.get(socket.roomCode);
     if (!room || room.hostId !== socket.id) {
       callback({ success: false, error: 'Not authorized' });
@@ -499,7 +499,7 @@ io.on('connection', (socket) => {
       return;
     }
     
-    room.words = getRandomWordPair();
+    room.words = await getRandomWordPair();
     
     const shuffledPlayers = shuffleArray(room.players);
     let roleIndex = 0;
@@ -652,11 +652,11 @@ setInterval(() => {
 }, 30 * 60 * 1000);
 
 // Start server
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
   console.log(`🎭 Undercover Game Server running on http://localhost:${PORT}`);
   console.log(`🔌 Socket.io enabled for real-time gameplay`);
   console.log(`📱 QR code generation enabled`);
-  console.log(`📊 Word pairs in database: ${getPairCount()}`);
+  console.log(`📊 Word pairs in database: ${await getPairCount()}`);
   
   // Start cron job for word generation
   startCron();

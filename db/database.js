@@ -1,33 +1,41 @@
-import Database from 'better-sqlite3';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import pg from 'pg';
+const { Pool } = pg;
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Use DATABASE_URL from environment (Render provides this)
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+});
 
-const dbPath = path.join(__dirname, 'words.db');
-const db = new Database(dbPath);
+// Initialize database schema
+async function initDatabase() {
+  const client = await pool.connect();
+  try {
+    // Create word_pairs table with unique constraint on word combination
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS word_pairs (
+        id SERIAL PRIMARY KEY,
+        word1 TEXT NOT NULL,
+        word2 TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(word1, word2)
+      )
+    `);
+    
+    // Create index for faster lookups
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_word_pairs_words ON word_pairs(word1, word2)
+    `);
+    
+    console.log('✅ PostgreSQL database initialized');
+  } catch (error) {
+    console.error('Database initialization error:', error.message);
+  } finally {
+    client.release();
+  }
+}
 
-// Enable WAL mode for better concurrent access
-db.pragma('journal_mode = WAL');
+// Initialize on module load
+initDatabase().catch(console.error);
 
-// Create word_pairs table with unique constraint on word combination
-db.exec(`
-  CREATE TABLE IF NOT EXISTS word_pairs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    word1 TEXT NOT NULL,
-    word2 TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(word1, word2)
-  )
-`);
-
-// Create index for faster lookups
-db.exec(`
-  CREATE INDEX IF NOT EXISTS idx_word_pairs_words ON word_pairs(word1, word2)
-`);
-
-console.log('Database initialized at:', dbPath);
-
-export default db;
-
+export default pool;

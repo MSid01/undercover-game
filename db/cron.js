@@ -14,7 +14,7 @@ const CRON_SCHEDULE = '*/5 * * * *'; // Every 5 minutes
 let isRunning = false;
 let cronTask = null;
 
-export function startCron() {
+export async function startCron() {
   // Check if cron is disabled via environment variable
   if (process.env.DISABLE_WORD_CRON === 'true') {
     console.log('⏸️  Word generation cron is DISABLED (DISABLE_WORD_CRON=true)');
@@ -23,7 +23,7 @@ export function startCron() {
 
   console.log('Starting word generation cron job...');
   console.log(`Schedule: ${CRON_SCHEDULE} (every 5 minutes)`);
-  console.log(`Current pairs in database: ${getPairCount()}`);
+  console.log(`Current pairs in database: ${await getPairCount()}`);
 
   // Run immediately on start
   runGenerationSafe();

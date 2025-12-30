@@ -1,4 +1,4 @@
-import db from './database.js';
+import pool from './database.js';
 
 // GROQ_API_KEY should be set in .env and loaded before importing this module
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
@@ -80,32 +80,40 @@ async function generateWordPairs() {
   }
 }
 
-function insertWordPairs(pairs) {
-  const insertStmt = db.prepare(`
-    INSERT OR IGNORE INTO word_pairs (word1, word2) VALUES (?, ?)
-  `);
-
+async function insertWordPairs(pairs) {
   let inserted = 0;
   let skipped = 0;
 
-  for (const [word1, word2] of pairs) {
-    if (!word1 || !word2) continue;
-    
-    // Normalize: lowercase, trim
-    const w1 = word1.toString().toLowerCase().trim();
-    const w2 = word2.toString().toLowerCase().trim();
-    
-    if (w1 === w2) continue; // Skip if same word
-    
-    // Insert in alphabetical order to avoid duplicates like (cat,dog) and (dog,cat)
-    const [first, second] = w1 < w2 ? [w1, w2] : [w2, w1];
-    
-    const result = insertStmt.run(first, second);
-    if (result.changes > 0) {
-      inserted++;
-    } else {
-      skipped++;
+  const client = await pool.connect();
+  try {
+    for (const [word1, word2] of pairs) {
+      if (!word1 || !word2) continue;
+      
+      // Normalize: lowercase, trim
+      const w1 = word1.toString().toLowerCase().trim();
+      const w2 = word2.toString().toLowerCase().trim();
+      
+      if (w1 === w2) continue; // Skip if same word
+      
+      // Insert in alphabetical order to avoid duplicates like (cat,dog) and (dog,cat)
+      const [first, second] = w1 < w2 ? [w1, w2] : [w2, w1];
+      
+      try {
+        const result = await client.query(
+          'INSERT INTO word_pairs (word1, word2) VALUES ($1, $2) ON CONFLICT (word1, word2) DO NOTHING RETURNING id',
+          [first, second]
+        );
+        if (result.rowCount > 0) {
+          inserted++;
+        } else {
+          skipped++;
+        }
+      } catch (err) {
+        skipped++;
+      }
     }
+  } finally {
+    client.release();
   }
 
   console.log(`Inserted: ${inserted}, Skipped (duplicates): ${skipped}`);
@@ -119,9 +127,9 @@ export async function runGeneration() {
   const pairs = await generateWordPairs();
   
   if (pairs.length > 0) {
-    const result = insertWordPairs(pairs);
-    const totalCount = db.prepare('SELECT COUNT(*) as count FROM word_pairs').get();
-    console.log(`Total word pairs in database: ${totalCount.count}`);
+    const result = await insertWordPairs(pairs);
+    const totalCount = await getPairCount();
+    console.log(`Total word pairs in database: ${totalCount}`);
     return result;
   }
   
@@ -129,31 +137,46 @@ export async function runGeneration() {
 }
 
 // Get a random word pair from the database
-export function getRandomPair() {
-  const pair = db.prepare(`
-    SELECT word1, word2 FROM word_pairs ORDER BY RANDOM() LIMIT 1
-  `).get();
-  
-  if (pair) {
-    // Randomly decide which word goes to civilian vs undercover
-    if (Math.random() > 0.5) {
-      return { civilianWord: pair.word1, undercoverWord: pair.word2 };
-    } else {
-      return { civilianWord: pair.word2, undercoverWord: pair.word1 };
+export async function getRandomPair() {
+  try {
+    const result = await pool.query(
+      'SELECT word1, word2 FROM word_pairs ORDER BY RANDOM() LIMIT 1'
+    );
+    
+    if (result.rows.length > 0) {
+      const pair = result.rows[0];
+      // Randomly decide which word goes to civilian vs undercover
+      if (Math.random() > 0.5) {
+        return { civilianWord: pair.word1, undercoverWord: pair.word2 };
+      } else {
+        return { civilianWord: pair.word2, undercoverWord: pair.word1 };
+      }
     }
+  } catch (error) {
+    console.error('Error getting random pair:', error.message);
   }
   
   return null;
 }
 
 // Get total count
-export function getPairCount() {
-  const result = db.prepare('SELECT COUNT(*) as count FROM word_pairs').get();
-  return result.count;
+export async function getPairCount() {
+  try {
+    const result = await pool.query('SELECT COUNT(*) as count FROM word_pairs');
+    return parseInt(result.rows[0].count, 10);
+  } catch (error) {
+    console.error('Error getting pair count:', error.message);
+    return 0;
+  }
 }
 
 // List all pairs (for debugging)
-export function getAllPairs() {
-  return db.prepare('SELECT * FROM word_pairs ORDER BY created_at DESC').all();
+export async function getAllPairs() {
+  try {
+    const result = await pool.query('SELECT * FROM word_pairs ORDER BY created_at DESC');
+    return result.rows;
+  } catch (error) {
+    console.error('Error getting all pairs:', error.message);
+    return [];
+  }
 }
-
