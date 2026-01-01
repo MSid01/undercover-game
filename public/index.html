@@ -556,6 +556,40 @@
             <div id="ready-players-list" class="ready-players-list"></div>
           </div>
 
+          <!-- Category Selection -->
+          <div class="category-section">
+            <h4>📚 Word Category</h4>
+            <p class="category-hint">Choose a theme or use generic words from database</p>
+            
+            <div class="category-chips">
+              <button class="category-chip selected" data-category="">🎯 All/Generic</button>
+              <button class="category-chip" data-category="Food">🍕 Food</button>
+              <button class="category-chip" data-category="Animals">🐾 Animals</button>
+              <button class="category-chip" data-category="Tech">💻 Tech</button>
+              <button class="category-chip" data-category="Sports">⚽ Sports</button>
+              <button class="category-chip" data-category="Movies & TV">🎬 Movies</button>
+              <button class="category-chip" data-category="Indian Culture">🇮🇳 Indian</button>
+              <button class="category-chip" data-category="Gaming">🎮 Gaming</button>
+              <button class="category-chip" data-category="Bollywood">🎭 Bollywood</button>
+              <button class="category-chip" data-category="Science">🔬 Science</button>
+              <button class="category-chip" data-category="Nature">🌿 Nature</button>
+              <button class="category-chip" data-category="Fashion">👗 Fashion</button>
+            </div>
+            
+            <div class="custom-category-section">
+              <label for="custom-category-input">Or enter custom theme:</label>
+              <div class="custom-category-input-group">
+                <input type="text" id="custom-category-input" class="custom-category-input" 
+                       placeholder="e.g., Harry Potter, Cricket, Anime..." maxlength="50">
+                <button id="use-custom-category-btn" class="btn btn-secondary btn-small">Use</button>
+              </div>
+            </div>
+            
+            <div id="category-status" class="category-status hidden">
+              <span id="category-status-text"></span>
+            </div>
+          </div>
+
           <div id="save-group-section" class="save-group-section">
             <button id="save-group-btn" class="btn btn-secondary">💾 Save as Group</button>
           </div>

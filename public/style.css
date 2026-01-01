@@ -88,6 +88,7 @@ body {
   display: none;
   min-height: 100vh;
   min-height: 100dvh;
+  zoom: 0.9;
 }
 
 .screen.active {
@@ -1732,6 +1733,119 @@ body {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 10px;
+}
+
+/* ==================== CATEGORY SELECTOR ==================== */
+.category-section {
+  width: 100%;
+  margin: 20px 0;
+  text-align: center;
+}
+
+.category-section h4 {
+  font-size: 1rem;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.category-hint {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.category-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.category-chip {
+  padding: 8px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.category-chip:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-secondary);
+  color: var(--text-primary);
+}
+
+.category-chip.selected {
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  border-color: transparent;
+  color: white;
+  font-weight: 500;
+}
+
+.custom-category-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.custom-category-section label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.custom-category-input-group {
+  display: flex;
+  gap: 8px;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.custom-category-input {
+  flex: 1;
+  padding: 10px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.custom-category-input:focus {
+  outline: none;
+  border-color: var(--accent-secondary);
+}
+
+.custom-category-input::placeholder {
+  color: var(--text-muted);
+}
+
+.category-status {
+  margin-top: 12px;
+  padding: 10px 16px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.category-status.loading {
+  color: var(--accent-secondary);
+}
+
+.category-status.success {
+  color: var(--accent-civilian);
+}
+
+.category-status.error {
+  color: var(--accent-primary);
 }
 
 /* ==================== SAVE GROUP ==================== */

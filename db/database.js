@@ -11,7 +11,7 @@ const pool = new Pool({
 async function initDatabase() {
   const client = await pool.connect();
   try {
-    // Create word_pairs table with unique constraint on word combination
+    // Create word_pairs table (generic pairs only)
     await client.query(`
       CREATE TABLE IF NOT EXISTS word_pairs (
         id SERIAL PRIMARY KEY,

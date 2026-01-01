@@ -44,7 +44,7 @@ async function generateWordPairs() {
             content: GENERATION_PROMPT
           }
         ],
-        temperature: 0.9, // Higher for variety
+        temperature: 0.9,
         max_tokens: 1000
       })
     });

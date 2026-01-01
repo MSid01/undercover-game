@@ -98,11 +98,94 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(join(__dirname, 'public')));
 
-// REST API - Generate words (for offline mode)
+// REST API - Generate words from database (for generic/everyday mode)
 app.post('/api/generate-words', async (req, res) => {
   const wordPair = await getRandomWordPair();
   console.log(`🎲 Selected word pair: ${wordPair.civilianWord} / ${wordPair.undercoverWord}`);
   res.json(wordPair);
+});
+
+// Generate category-specific word pairs on-demand (stored client-side, not in DB)
+app.post('/api/generate-category-words', async (req, res) => {
+  const { category } = req.body;
+  
+  if (!category) {
+    return res.status(400).json({ success: false, error: 'Category is required' });
+  }
+  
+  const GROQ_API_KEY = process.env.GROQ_API_KEY;
+  if (!GROQ_API_KEY) {
+    return res.status(500).json({ success: false, error: 'AI generation not available' });
+  }
+  
+  try {
+    console.log(`🎯 Generating 50 word pairs for category: ${category}`);
+    
+    const prompt = `Generate 50 word pairs for the "Undercover" word game.
+
+IMPORTANT: Generate words in the context of "${category}".
+
+Rules:
+- Each pair should be two related but distinct words/concepts within the ${category} theme
+- They should be similar enough to confuse, but different enough to identify
+- Words should be common and known to most people
+- Stay focused on the ${category} context
+- Avoid obscure or very technical terms
+
+Return ONLY a JSON array with exactly 50 pairs, no explanation:
+[["word1", "word2"], ["word3", "word4"], ...]`;
+
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-8b-instant',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.9,
+        max_tokens: 2500
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('Groq API error:', response.status, error);
+      return res.status(500).json({ success: false, error: 'AI generation failed' });
+    }
+
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content;
+    
+    if (!content) {
+      return res.status(500).json({ success: false, error: 'No response from AI' });
+    }
+
+    // Parse JSON from response
+    const jsonMatch = content.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      console.error('No JSON found in response:', content);
+      return res.status(500).json({ success: false, error: 'Invalid AI response format' });
+    }
+
+    const pairs = JSON.parse(jsonMatch[0]);
+    console.log(`✅ Generated ${pairs.length} word pairs for "${category}"`);
+    
+    // Return pairs for client-side storage
+    res.json({ 
+      success: true, 
+      category,
+      pairs: pairs.map(([w1, w2]) => ({ 
+        civilianWord: w1, 
+        undercoverWord: w2 
+      }))
+    });
+    
+  } catch (error) {
+    console.error('Category generation error:', error);
+    res.status(500).json({ success: false, error: 'Generation failed' });
+  }
 });
 
 // Health check
