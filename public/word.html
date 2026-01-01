@@ -308,32 +308,45 @@
     });
     
     function initSocket() {
-      if (socket) return;
-      socket = io();
-      
-      socket.on('connect', () => {
-        console.log('Connected to server');
-      });
-      
-      // New round word received
-      socket.on('new-round-word', (data) => {
-        console.log('New round word received:', data);
-        myWord = data.word;
-        myRole = data.role;
-        showState('ready-state');
-      });
-      
-      // Room closed
-      socket.on('room-closed', (data) => {
-        localStorage.removeItem(STORAGE_KEY);
-        showState('error-state');
-        document.getElementById('error-message').textContent = data.reason || 'Game session ended.';
+      return new Promise((resolve) => {
+        if (socket && socket.connected) {
+          resolve();
+          return;
+        }
+        
+        socket = io();
+        
+        socket.on('connect', () => {
+          console.log('Connected to server');
+          resolve();
+        });
+        
+        socket.on('connect_error', (err) => {
+          console.error('Connection error:', err);
+          showState('error-state');
+          document.getElementById('error-message').textContent = 'Could not connect to server. Please try again.';
+        });
+        
+        // New round word received
+        socket.on('new-round-word', (data) => {
+          console.log('New round word received:', data);
+          myWord = data.word;
+          myRole = data.role;
+          showState('ready-state');
+        });
+        
+        // Room closed
+        socket.on('room-closed', (data) => {
+          localStorage.removeItem(STORAGE_KEY);
+          showState('error-state');
+          document.getElementById('error-message').textContent = data.reason || 'Game session ended.';
+        });
       });
     }
     
-    function claimWordWithToken(token) {
+    async function claimWordWithToken(token) {
       showState('loading-state');
-      initSocket();
+      await initSocket();  // Wait for connection!
       
       socket.emit('claim-by-token', { token }, (response) => {
         console.log('Claim response:', response);
@@ -365,9 +378,9 @@
       });
     }
     
-    function reconnectWithToken(token) {
+    async function reconnectWithToken(token) {
       showState('loading-state');
-      initSocket();
+      await initSocket();  // Wait for connection!
       
       socket.emit('reconnect-with-token', { token }, (response) => {
         console.log('Reconnect response:', response);

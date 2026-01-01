@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import QRCode from 'qrcode';
 import { v4 as uuidv4 } from 'uuid';
-import { getRandomPair, getPairCount, runGeneration } from './db/word-generator.js';
+import { getRandomPair, getPairCount, runGeneration, getAllPairs } from './db/word-generator.js';
 import { startCron, stopCron } from './db/cron.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -122,6 +122,12 @@ app.get('/api/words/stats', async (req, res) => {
     count: await getPairCount(),
     hasGroqKey: !!process.env.GROQ_API_KEY
   });
+});
+
+// Get all word pairs (for debugging)
+app.get('/api/words', async (req, res) => {
+  const pairs = await getAllPairs();
+  res.json({ count: pairs.length, pairs });
 });
 
 // Manually trigger word generation (for testing)
