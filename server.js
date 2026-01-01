@@ -356,7 +356,13 @@ io.on('connection', (socket) => {
       return;
     }
     
-    // Update existing tokens with new words
+    // Clear any existing retry interval for this room
+    if (room.retryInterval) {
+      clearInterval(room.retryInterval);
+      room.retryInterval = null;
+    }
+    
+    // Update existing tokens with new words and reset ack status
     for (const player of players) {
       const existingPlayer = room.players.find(p => p.name === player.name);
       if (existingPlayer && existingPlayer.token) {
@@ -365,26 +371,88 @@ io.on('connection', (socket) => {
           tokenData.word = player.word;
           tokenData.role = player.role;
           tokenData.hasSeenWord = false;
+          tokenData.wordAcknowledged = false; // Track acknowledgement
           
           // Update room player data
           existingPlayer.word = player.word;
           existingPlayer.role = player.role;
           existingPlayer.hasSeenWord = false;
-          
-          // Notify connected player of new word
-          if (tokenData.socketId) {
-            io.to(tokenData.socketId).emit('new-round-word', {
-              word: player.word,
-              role: player.role
-            });
-          }
         }
       }
     }
     
-    console.log(`🔄 Round updated for room ${roomCode}`);
+    // Function to push word to unacknowledged players
+    const pushToUnacknowledged = () => {
+      if (!rooms.has(roomCode)) {
+        // Room closed, stop retrying
+        if (room.retryInterval) {
+          clearInterval(room.retryInterval);
+          room.retryInterval = null;
+        }
+        return;
+      }
+      
+      let allAcknowledged = true;
+      
+      for (const player of room.players) {
+        if (player.token) {
+          const tokenData = playerTokens.get(player.token);
+          if (tokenData && !tokenData.wordAcknowledged) {
+            allAcknowledged = false;
+            // Push to connected player
+            if (tokenData.socketId) {
+              console.log(`📤 Pushing word to ${tokenData.playerName} (retry)`);
+              io.to(tokenData.socketId).emit('new-round-word', {
+                word: tokenData.word,
+                role: tokenData.role
+              });
+            }
+          }
+        }
+      }
+      
+      // Stop retrying if all acknowledged
+      if (allAcknowledged && room.retryInterval) {
+        console.log(`✅ All players acknowledged for room ${roomCode}`);
+        clearInterval(room.retryInterval);
+        room.retryInterval = null;
+      }
+    };
+    
+    // Push immediately
+    pushToUnacknowledged();
+    
+    // Start retry interval (every 3 seconds)
+    room.retryInterval = setInterval(pushToUnacknowledged, 3000);
+    
+    console.log(`🔄 Round updated for room ${roomCode} (send-ack started)`);
     
     callback({ success: true });
+  });
+  
+  // PLAYER: Acknowledge receipt of new word
+  socket.on('ack-word-received', (data) => {
+    const { token } = data;
+    const tokenData = playerTokens.get(token);
+    
+    if (tokenData) {
+      tokenData.wordAcknowledged = true;
+      console.log(`✓ ${tokenData.playerName} acknowledged word received`);
+      
+      // Notify host of progress
+      const room = rooms.get(tokenData.roomCode);
+      if (room) {
+        const ackCount = room.players.filter(p => {
+          const td = playerTokens.get(p.token);
+          return td && td.wordAcknowledged;
+        }).length;
+        
+        io.to(room.hostId).emit('word-ack-progress', {
+          acknowledged: ackCount,
+          total: room.players.length
+        });
+      }
+    }
   });
 
   // HOST: Close offline room and clean up tokens
@@ -393,6 +461,12 @@ io.on('connection', (socket) => {
     const room = rooms.get(roomCode);
     
     if (room) {
+      // Clear retry interval
+      if (room.retryInterval) {
+        clearInterval(room.retryInterval);
+        room.retryInterval = null;
+      }
+      
       // Clean up all tokens for this room
       for (const player of room.players) {
         if (player.token) {

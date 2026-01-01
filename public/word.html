@@ -348,11 +348,8 @@
     let myWord = null;
     let myRole = null;
     let hasSeenWord = false;
-    let lastWordReceived = null; // Track the last word to detect new round
-    let pollInterval = null;
     
     const STORAGE_KEY = 'undercover_my_token';
-    const POLL_INTERVAL_MS = 3000; // Poll every 3 seconds
     
     // DOM helpers
     function showState(stateId) {
@@ -367,54 +364,11 @@
       }
     }
     
-    // Start polling for new word (fallback if push fails)
-    function startPolling() {
-      if (pollInterval) return; // Already polling
-      
-      console.log('📡 Starting polling for new word...');
-      pollInterval = setInterval(async () => {
-        if (!myToken) return;
-        
-        try {
-          const response = await fetch(`/api/player/word/${myToken}`);
-          if (!response.ok) return;
-          
-          const data = await response.json();
-          if (data.success && data.word !== undefined) {
-            // Check if this is a new word (different from last received)
-            const wordKey = `${data.word}-${data.role}`;
-            if (wordKey !== lastWordReceived) {
-              console.log('📡 Poll: New word detected!', data.word);
-              
-              // Update state
-              myWord = data.word;
-              myRole = data.role;
-              hasSeenWord = false;
-              lastWordReceived = wordKey;
-              
-              // Stop polling
-              stopPolling();
-              
-              // Notify user
-              vibratePhone();
-              playNotificationSound();
-              
-              // Show new word notification
-              showState('new-word-state');
-            }
-          }
-        } catch (err) {
-          console.log('Poll error:', err);
-        }
-      }, POLL_INTERVAL_MS);
-    }
-    
-    // Stop polling
-    function stopPolling() {
-      if (pollInterval) {
-        console.log('📡 Stopping polling');
-        clearInterval(pollInterval);
-        pollInterval = null;
+    // Send acknowledgement to server
+    function acknowledgeWordReceived() {
+      if (socket && myToken) {
+        socket.emit('ack-word-received', { token: myToken });
+        console.log('✓ Sent word acknowledgement');
       }
     }
     
@@ -473,16 +427,15 @@
           document.getElementById('error-message').textContent = 'Could not connect to server. Please try again.';
         });
         
-        // New round word received (via push)
+        // New round word received (via push from server)
         socket.on('new-round-word', (data) => {
-          console.log('🎉 New round word received (push):', data);
+          console.log('🎉 New round word received:', data);
           myWord = data.word;
           myRole = data.role;
           hasSeenWord = false;
-          lastWordReceived = `${data.word}-${data.role}`;
           
-          // Stop polling since we got it via push
-          stopPolling();
+          // Send acknowledgement to server (stops retry)
+          acknowledgeWordReceived();
           
           // Notify user
           vibratePhone();
@@ -523,14 +476,11 @@
           if (response.reconnected) {
             // Already seen this round's word
             hasSeenWord = true;
-            lastWordReceived = `${myWord}-${myRole}`;
             if (myRole === 'mrwhite') {
               showState('ingame-mrwhite-state');
             } else {
               showState('ingame-state');
             }
-            // Start polling for next round
-            startPolling();
           } else {
             // First time seeing - show ready state
             document.getElementById('player-name').textContent = myName;
@@ -559,7 +509,6 @@
           if (response.hasWord) {
             // Has current round word
             hasSeenWord = true;
-            lastWordReceived = `${myWord}-${myRole}`;
             if (myRole === 'mrwhite') {
               showState('ingame-mrwhite-state');
             } else {
@@ -573,8 +522,6 @@
               showState('ingame-state');
             }
           }
-          // Start polling for next round
-          startPolling();
         } else {
           localStorage.removeItem(STORAGE_KEY);
           showState('error-state');
@@ -599,17 +546,11 @@
     }
     
     function hideWord() {
-      // Track current word to detect new rounds
-      lastWordReceived = `${myWord}-${myRole}`;
-      
       if (myRole === 'mrwhite') {
         showState('ingame-mrwhite-state');
       } else {
         showState('ingame-state');
       }
-      
-      // Start polling as fallback for next round
-      startPolling();
     }
   </script>
 </body>
