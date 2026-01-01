@@ -299,7 +299,7 @@ io.on('connection', (socket) => {
     console.log(`✓ ${tokenData.playerName} confirmed word seen via phone`);
   });
 
-  // PLAYER: Reconnect with existing token (for next round)
+  // PLAYER: Reconnect with existing token (for next round or page refresh)
   socket.on('reconnect-with-token', (data, callback) => {
     const { token } = data;
     const tokenData = playerTokens.get(token);
@@ -317,12 +317,14 @@ io.on('connection', (socket) => {
     
     console.log(`🔄 ${tokenData.playerName} reconnected with token`);
     
+    // Return current word so player can view again
     callback({
       success: true,
       playerName: tokenData.playerName,
       roomCode: tokenData.roomCode,
-      // Don't send word yet - wait for new round to start
-      waiting: true
+      word: tokenData.word,
+      role: tokenData.role,
+      hasWord: tokenData.word !== undefined
     });
   });
 

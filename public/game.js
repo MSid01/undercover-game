@@ -46,7 +46,8 @@ const STORAGE_KEYS = {
   RECENT_NAMES: 'undercover_recent_names',
   SESSION: 'undercover_session',
   PLAYER_STATS: 'undercover_player_stats',
-  MY_TOKEN: 'undercover_my_token'
+  MY_TOKEN: 'undercover_my_token',
+  PLAYED_PAIRS: 'undercover_played_pairs'
 };
 
 // Points
@@ -134,6 +135,112 @@ function clearToken() {
   localStorage.removeItem(STORAGE_KEYS.MY_TOKEN);
 }
 
+// ==================== PLAYED WORD PAIRS ====================
+function getPlayedPairs() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.PLAYED_PAIRS)) || []; }
+  catch { return []; }
+}
+
+function savePlayedPairs(pairs) {
+  localStorage.setItem(STORAGE_KEYS.PLAYED_PAIRS, JSON.stringify(pairs));
+}
+
+function addPlayedPair(civilianWord, undercoverWord) {
+  const played = getPlayedPairs();
+  // Create a normalized key (alphabetical order)
+  const w1 = civilianWord.toLowerCase();
+  const w2 = undercoverWord.toLowerCase();
+  const pairKey = w1 < w2 ? `${w1}|${w2}` : `${w2}|${w1}`;
+  
+  if (!played.includes(pairKey)) {
+    played.push(pairKey);
+    savePlayedPairs(played);
+    console.log(`📝 Added played pair: ${pairKey}`);
+  }
+}
+
+function hasPlayedPair(civilianWord, undercoverWord) {
+  const played = getPlayedPairs();
+  const w1 = civilianWord.toLowerCase();
+  const w2 = undercoverWord.toLowerCase();
+  const pairKey = w1 < w2 ? `${w1}|${w2}` : `${w2}|${w1}`;
+  return played.includes(pairKey);
+}
+
+function clearPlayedPairs() {
+  localStorage.removeItem(STORAGE_KEYS.PLAYED_PAIRS);
+  console.log('🗑️ Cleared all played pairs');
+}
+
+function getPlayedPairsCount() {
+  return getPlayedPairs().length;
+}
+
+// Prefetched word pair for next round
+let prefetchedWordPair = null;
+let isPrefetching = false;
+
+async function prefetchNextWordPair() {
+  if (isPrefetching) return;
+  isPrefetching = true;
+  
+  try {
+    // Try up to 5 times to get an unplayed pair
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const response = await fetch('/api/generate-words', { method: 'POST' });
+      const data = await response.json();
+      
+      if (!hasPlayedPair(data.civilianWord, data.undercoverWord)) {
+        prefetchedWordPair = data;
+        console.log(`✅ Prefetched word pair: ${data.civilianWord} / ${data.undercoverWord}`);
+        break;
+      } else {
+        console.log(`⏭️ Skipping already played pair: ${data.civilianWord} / ${data.undercoverWord}`);
+      }
+    }
+  } catch (error) {
+    console.error('Failed to prefetch word pair:', error);
+  } finally {
+    isPrefetching = false;
+  }
+}
+
+async function getWordPairForRound() {
+  // Use prefetched pair if available
+  if (prefetchedWordPair) {
+    const pair = prefetchedWordPair;
+    prefetchedWordPair = null;
+    
+    // Start prefetching next pair in background
+    prefetchNextWordPair();
+    
+    return pair;
+  }
+  
+  // Otherwise fetch now (with retry for unplayed)
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      const response = await fetch('/api/generate-words', { method: 'POST' });
+      const data = await response.json();
+      
+      if (!hasPlayedPair(data.civilianWord, data.undercoverWord)) {
+        // Start prefetching next pair in background
+        prefetchNextWordPair();
+        return data;
+      } else {
+        console.log(`⏭️ Skipping already played pair: ${data.civilianWord} / ${data.undercoverWord}`);
+      }
+    } catch (error) {
+      console.error('Failed to fetch word pair:', error);
+    }
+  }
+  
+  // Fallback: return any pair (all pairs played or error)
+  console.warn('⚠️ Could not find unplayed pair, using any available');
+  const response = await fetch('/api/generate-words', { method: 'POST' });
+  return await response.json();
+}
+
 function getPlayerStats() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.PLAYER_STATS)) || {}; }
   catch { return {}; }
@@ -202,6 +309,9 @@ function initApp() {
   updatePlayerCountUI();
   updateRoleConfigUI();
   checkForSavedSession();
+  
+  // Start prefetching word pair in background
+  prefetchNextWordPair();
 }
 
 function checkForSavedSession() {
@@ -1181,16 +1291,14 @@ async function prepareGame() {
     const isFirstRound = !state.session.active;
     if (isFirstRound) startNewSession();
     
-    const response = await fetch('/api/generate-words', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({})
-    });
-    if (!response.ok) throw new Error('Failed to generate words');
-    
-    const wordData = await response.json();
+    // Get word pair (uses prefetched if available, skips played pairs)
+    const wordData = await getWordPairForRound();
     state.words.civilian = wordData.civilianWord;
     state.words.undercover = wordData.undercoverWord;
+    
+    // Mark this pair as played
+    addPlayedPair(wordData.civilianWord, wordData.undercoverWord);
+    
     assignRoles();
     state.discussionRound = 1;
     state.currentRevealIndex = 0;

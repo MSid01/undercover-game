@@ -15,6 +15,7 @@
       --accent-primary: #e63946;
       --accent-secondary: #f4a261;
       --accent-civilian: #2a9d8f;
+      --accent-new: #8338ec;
       --text-primary: #f8f9fa;
       --text-secondary: #adb5bd;
       --text-muted: #6c757d;
@@ -51,6 +52,8 @@
       border: 1px solid var(--border-color);
       border-radius: var(--radius-xl);
       padding: 32px 24px;
+      position: relative;
+      overflow: hidden;
     }
     
     .logo {
@@ -124,6 +127,11 @@
       cursor: pointer;
       transition: all 0.2s ease;
       width: 100%;
+      margin-bottom: 12px;
+    }
+    
+    .btn:last-child {
+      margin-bottom: 0;
     }
     
     .btn-primary {
@@ -140,6 +148,17 @@
       background: var(--bg-elevated);
       color: var(--text-primary);
       border: 1px solid var(--border-color);
+    }
+    
+    .btn-new {
+      background: linear-gradient(135deg, var(--accent-new), #6b21a8);
+      color: white;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(131, 56, 236, 0.4); }
+      50% { box-shadow: 0 0 20px 10px rgba(131, 56, 236, 0); }
     }
     
     .spinner {
@@ -173,6 +192,17 @@
       margin-bottom: 16px;
     }
     
+    .new-word-icon {
+      font-size: 4rem;
+      margin-bottom: 12px;
+      animation: bounce 0.6s ease-in-out infinite alternate;
+    }
+    
+    @keyframes bounce {
+      from { transform: translateY(0); }
+      to { transform: translateY(-10px); }
+    }
+    
     .hint {
       color: var(--text-muted);
       font-size: 0.85rem;
@@ -185,11 +215,40 @@
       margin-top: 12px;
     }
     
+    .round-badge {
+      display: inline-block;
+      background: var(--accent-new);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    
     .hidden { display: none !important; }
     
     /* States */
     .state { display: none; }
     .state.active { display: block; }
+    
+    /* New word notification banner */
+    .new-word-banner {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(135deg, var(--accent-new), #6b21a8);
+      color: white;
+      padding: 12px;
+      font-weight: 600;
+      animation: slideDown 0.3s ease-out;
+    }
+    
+    @keyframes slideDown {
+      from { transform: translateY(-100%); }
+      to { transform: translateY(0); }
+    }
   </style>
 </head>
 <body>
@@ -202,7 +261,7 @@
         <p class="instruction">Loading your word...</p>
       </div>
       
-      <!-- Ready State -->
+      <!-- Ready State (tap to reveal) -->
       <div id="ready-state" class="state">
         <div class="logo">🎭</div>
         <p class="instruction">Welcome,</p>
@@ -213,13 +272,24 @@
         </button>
       </div>
       
+      <!-- New Word Available State -->
+      <div id="new-word-state" class="state">
+        <div class="new-word-icon">🎉</div>
+        <span class="round-badge">NEW ROUND</span>
+        <h2 class="title">New Word Ready!</h2>
+        <p class="instruction">You have a new secret word for this round.</p>
+        <button id="show-new-word-btn" class="btn btn-new">
+          👁️ Reveal New Word
+        </button>
+      </div>
+      
       <!-- Word State -->
       <div id="word-state" class="state">
         <p class="instruction">Your secret word is</p>
         <div id="word-display" class="word-display">Word</div>
         <p class="hint">Memorize it!</p>
-        <button id="confirm-btn" class="btn btn-secondary">
-          ✓ Got it! I've memorized it
+        <button id="hide-word-btn" class="btn btn-secondary">
+          🙈 Hide Word
         </button>
       </div>
       
@@ -233,25 +303,28 @@
             Listen to others and try to blend in.
           </p>
         </div>
-        <button id="mrwhite-confirm-btn" class="btn btn-secondary">
+        <button id="mrwhite-hide-btn" class="btn btn-secondary">
           ✓ Got it!
         </button>
       </div>
       
-      <!-- Done State -->
-      <div id="done-state" class="state">
+      <!-- In Game State (word hidden, can view again) -->
+      <div id="ingame-state" class="state">
         <div class="success-icon">✓</div>
-        <h2 class="title">Word Memorized!</h2>
-        <p class="instruction">Return to the main device to continue.</p>
+        <h2 class="title">You're Ready!</h2>
+        <p class="instruction">Discuss with other players. Don't reveal your word!</p>
+        <button id="view-again-btn" class="btn btn-secondary">
+          👁️ View My Word Again
+        </button>
         <p class="keep-hint">Keep this page open for next rounds!</p>
       </div>
       
-      <!-- Waiting State (for next round) -->
-      <div id="waiting-state" class="state">
-        <div class="logo">⏳</div>
-        <h2 class="title">Waiting for Next Round</h2>
-        <p class="instruction">Your new word will appear automatically!</p>
-        <p class="keep-hint">Keep this page open.</p>
+      <!-- In Game Mr White State -->
+      <div id="ingame-mrwhite-state" class="state">
+        <div class="success-icon">👻</div>
+        <h2 class="title">You're Mr. White!</h2>
+        <p class="instruction">Listen carefully and blend in!</p>
+        <p class="keep-hint">Keep this page open for next rounds!</p>
       </div>
       
       <!-- Error State -->
@@ -274,6 +347,7 @@
     let myName = null;
     let myWord = null;
     let myRole = null;
+    let hasSeenWord = false;
     
     const STORAGE_KEY = 'undercover_my_token';
     
@@ -281,6 +355,22 @@
     function showState(stateId) {
       document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
       document.getElementById(stateId).classList.add('active');
+    }
+    
+    // Vibrate phone if supported (for new word notification)
+    function vibratePhone() {
+      if ('vibrate' in navigator) {
+        navigator.vibrate([200, 100, 200]);
+      }
+    }
+    
+    // Play notification sound (optional)
+    function playNotificationSound() {
+      try {
+        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleEAKInDC6ty1ay8TRIzV6L1rFA4rhNTouW89Kl+q3OqsWBIJQ5HW57xfDhBNn9znqFAJCUaR1eW3WAwOR5XX5a1VCQpFj9TksVoNDkSO0+OtVwoKQ4zS4q5aDg5Ci9Hgr1sODkCJ0N+wXA8OPofO3rFdEA49hc3csF4RDzyDy9qxXxINOoHJ2LJgEw45f8fWsmETDTd9xdSzYhQNNXvD0rRjFQ00ecHQtWQWDTJ3v862ZRcNMHW9zLdmGA0ucrq');
+        audio.volume = 0.3;
+        audio.play().catch(() => {});
+      } catch (e) {}
     }
     
     // Initialize
@@ -303,8 +393,10 @@
       
       // Button listeners
       document.getElementById('show-word-btn').addEventListener('click', showWord);
-      document.getElementById('confirm-btn').addEventListener('click', confirmWord);
-      document.getElementById('mrwhite-confirm-btn').addEventListener('click', confirmWord);
+      document.getElementById('show-new-word-btn').addEventListener('click', showWord);
+      document.getElementById('hide-word-btn').addEventListener('click', hideWord);
+      document.getElementById('mrwhite-hide-btn').addEventListener('click', hideWord);
+      document.getElementById('view-again-btn').addEventListener('click', showWord);
     });
     
     function initSocket() {
@@ -329,10 +421,17 @@
         
         // New round word received
         socket.on('new-round-word', (data) => {
-          console.log('New round word received:', data);
+          console.log('🎉 New round word received:', data);
           myWord = data.word;
           myRole = data.role;
-          showState('ready-state');
+          hasSeenWord = false;
+          
+          // Notify user
+          vibratePhone();
+          playNotificationSound();
+          
+          // Show new word notification
+          showState('new-word-state');
         });
         
         // Room closed
@@ -346,7 +445,7 @@
     
     async function claimWordWithToken(token) {
       showState('loading-state');
-      await initSocket();  // Wait for connection!
+      await initSocket();
       
       socket.emit('claim-by-token', { token }, (response) => {
         console.log('Claim response:', response);
@@ -364,10 +463,15 @@
           window.history.replaceState({}, document.title, '/word');
           
           if (response.reconnected) {
-            // Already seen, show waiting
-            showState('waiting-state');
+            // Already seen this round's word
+            hasSeenWord = true;
+            if (myRole === 'mrwhite') {
+              showState('ingame-mrwhite-state');
+            } else {
+              showState('ingame-state');
+            }
           } else {
-            // Show ready state
+            // First time seeing - show ready state
             document.getElementById('player-name').textContent = myName;
             showState('ready-state');
           }
@@ -380,7 +484,7 @@
     
     async function reconnectWithToken(token) {
       showState('loading-state');
-      await initSocket();  // Wait for connection!
+      await initSocket();
       
       socket.emit('reconnect-with-token', { token }, (response) => {
         console.log('Reconnect response:', response);
@@ -388,7 +492,25 @@
         if (response.success) {
           myToken = token;
           myName = response.playerName;
-          showState('waiting-state');
+          myWord = response.word;
+          myRole = response.role;
+          
+          if (response.hasWord) {
+            // Has current round word
+            hasSeenWord = true;
+            if (myRole === 'mrwhite') {
+              showState('ingame-mrwhite-state');
+            } else {
+              showState('ingame-state');
+            }
+          } else {
+            // Waiting for next round
+            if (myRole === 'mrwhite') {
+              showState('ingame-mrwhite-state');
+            } else {
+              showState('ingame-state');
+            }
+          }
         } else {
           localStorage.removeItem(STORAGE_KEY);
           showState('error-state');
@@ -404,14 +526,21 @@
         document.getElementById('word-display').textContent = myWord;
         showState('word-state');
       }
+      
+      // Notify server first time
+      if (!hasSeenWord) {
+        hasSeenWord = true;
+        socket.emit('token-word-seen', { token: myToken });
+      }
     }
     
-    function confirmWord() {
-      // Notify server
-      socket.emit('token-word-seen', { token: myToken });
-      showState('done-state');
+    function hideWord() {
+      if (myRole === 'mrwhite') {
+        showState('ingame-mrwhite-state');
+      } else {
+        showState('ingame-state');
+      }
     }
   </script>
 </body>
 </html>
-
