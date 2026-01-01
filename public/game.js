@@ -58,6 +58,61 @@ const POINTS = {
   MRWHITE_GUESS: 12
 };
 
+// ==================== AUDIO SYSTEM ====================
+const audioCache = {};
+const AUDIO_FILES = {
+  click: '/audios/click.mp3',
+  civiliansWin: '/audios/civilians-win.mp3',
+  infiltratorsWin: '/audios/infiltrators-win.mp3',
+  civilianDie: '/audios/civilian-die.mp3',
+  undercoverDie: '/audios/undercover-die.mp3',
+  mrwhiteGuessedCorrect: '/audios/mrwhite-guessed-correct.mp3',
+  mrwhiteGuessedWrong: '/audios/mrwhite-guessed-wrong.mp3',
+  amnesicMode: '/audios/amnesic-mode.mp3'
+};
+
+// Prefetch all audio files
+function prefetchAudio() {
+  Object.entries(AUDIO_FILES).forEach(([key, src]) => {
+    const audio = new Audio();
+    audio.preload = 'auto';
+    audio.src = src;
+    audioCache[key] = audio;
+    console.log(`🔊 Prefetching audio: ${key}`);
+  });
+}
+
+// Play a cached audio
+function playAudio(key, volume = 0.7, loop = false) {
+  try {
+    const cachedAudio = audioCache[key];
+    if (cachedAudio) {
+      // Clone for overlapping plays
+      const audio = cachedAudio.cloneNode();
+      audio.volume = volume;
+      audio.loop = loop;
+      audio.play().catch(err => console.log('Audio play failed:', err));
+      return audio;
+    }
+  } catch (e) {
+    console.log('Audio not supported:', e);
+  }
+  return null;
+}
+
+// Stop a specific audio
+function stopAudio(audio) {
+  if (audio) {
+    audio.pause();
+    audio.currentTime = 0;
+  }
+}
+
+// Play click sound
+function playClickSound() {
+  playAudio('click', 0.3);
+}
+
 // ==================== DOM HELPERS ====================
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => document.querySelectorAll(selector);
@@ -282,6 +337,9 @@ function updatePlayerStats(playerName, role, won, points) {
 
 // ==================== INITIALIZATION ====================
 document.addEventListener('DOMContentLoaded', () => {
+  // Prefetch audio files
+  prefetchAudio();
+  
   // Always initialize event listeners first
   initEventListeners();
   
@@ -328,6 +386,13 @@ function checkForSavedSession() {
 }
 
 function initEventListeners() {
+  // Global click sound for buttons
+  document.addEventListener('click', (e) => {
+    if (e.target.matches('button, .btn, .mode-card, .elimination-option, .player-reveal-option')) {
+      playClickSound();
+    }
+  });
+  
   // Landing
   $('#play-btn').addEventListener('click', () => {
     renderSavedGroups();
@@ -417,6 +482,13 @@ function initEventListeners() {
   $('#start-elimination-btn').addEventListener('click', startElimination);
   $('#continue-game-btn').addEventListener('click', continueAfterElimination);
   $('#submit-guess-btn').addEventListener('click', handleMrWhiteGuess);
+
+  // Scorecard and Amnesic mode
+  $('#view-scores-btn').addEventListener('click', showScorecard);
+  $('#close-scorecard-modal').addEventListener('click', hideScorecard);
+  $('#amnesic-mode-btn').addEventListener('click', showAmnesicMode);
+  $('#close-amnesic-modal').addEventListener('click', hideAmnesicMode);
+  $('#hide-amnesic-word-btn').addEventListener('click', hideAmnesicWord);
 
   $('#play-again-btn').addEventListener('click', playNextRound);
   $('#end-session-btn').addEventListener('click', endSession);
@@ -1473,6 +1545,9 @@ function showRoleReveal() {
   else if (player.role === 'undercover') { emojiEl.textContent = '🕵️'; nameEl.textContent = 'Undercover'; }
   else { emojiEl.textContent = '👻'; nameEl.textContent = 'Mr. White'; }
   
+  // Play elimination sound
+  playEliminationAudio(player.role);
+  
   const guessSection = $('#mrwhite-guess-section');
   const continueBtn = $('#continue-game-btn');
   if (player.role === 'mrwhite') {
@@ -1493,11 +1568,13 @@ function handleMrWhiteGuess() {
   if (!guess) { $('#mrwhite-guess-input').focus(); return; }
   if (guess === civilianWord) {
     state.mrWhiteGuessedCorrectly = true;
+    playMrWhiteGuessAudio(true);
     const mrWhite = state.players.find(p => p.name === state.eliminatedThisRound);
     mrWhite.roundPoints = POINTS.MRWHITE_GUESS;
     addPointsToSession();
     endGame('mrwhite-guess');
   } else {
+    playMrWhiteGuessAudio(false);
     alert(`Wrong! The word was "${state.words.civilian}"`);
     $('#mrwhite-guess-section').classList.add('hidden');
     $('#continue-game-btn').classList.remove('hidden');
@@ -1545,23 +1622,28 @@ function addPointsToSession() {
   saveSession();
 }
 
-// Play win audio
+// Play win/elimination audio
 function playWinAudio(winner) {
-  try {
-    let audioFile = null;
-    if (winner === 'civilian') {
-      audioFile = '/audios/civilians-win.mp3';
-    } else if (winner === 'undercover' || winner === 'mrwhite') {
-      audioFile = '/audios/infiltrtors-win.mp3';
-    }
-    
-    if (audioFile) {
-      const audio = new Audio(audioFile);
-      audio.volume = 0.7;
-      audio.play().catch(err => console.log('Audio play failed:', err));
-    }
-  } catch (e) {
-    console.log('Audio not supported:', e);
+  if (winner === 'civilian') {
+    playAudio('civiliansWin', 0.7);
+  } else if (winner === 'undercover' || winner === 'mrwhite') {
+    playAudio('infiltratorsWin', 0.7);
+  }
+}
+
+function playEliminationAudio(role) {
+  if (role === 'civilian') {
+    playAudio('civilianDie', 0.7);
+  } else if (role === 'undercover') {
+    playAudio('undercoverDie', 0.7);
+  }
+}
+
+function playMrWhiteGuessAudio(correct) {
+  if (correct) {
+    playAudio('mrwhiteGuessedCorrect', 0.7);
+  } else {
+    playAudio('mrwhiteGuessedWrong', 0.7);
   }
 }
 
@@ -1644,6 +1726,103 @@ function resetGame() {
   updatePlayerCountUI();
   checkForSavedSession();
   showScreen('landing');
+}
+
+// ==================== SCORECARD ====================
+function showScorecard() {
+  const scoreList = $('#scorecard-list');
+  scoreList.innerHTML = '';
+  
+  $('#scorecard-round').textContent = `Game Round ${state.session.gameRound || 1}`;
+  
+  // Sort by total points
+  const sortedPlayers = [...state.session.players].sort((a, b) => b.totalPoints - a.totalPoints);
+  
+  sortedPlayers.forEach((player, index) => {
+    const gamePlayer = state.players.find(p => p.name === player.name);
+    const isEliminated = gamePlayer ? gamePlayer.eliminated : false;
+    
+    const item = document.createElement('div');
+    item.className = 'scorecard-item' + (index === 0 ? ' leader' : '') + (isEliminated ? ' eliminated' : '');
+    item.innerHTML = `
+      <span class="scorecard-rank">${index + 1}</span>
+      <span class="scorecard-name">
+        ${escapeHtml(player.name)}
+        ${isEliminated ? '<span class="eliminated-badge">☠️</span>' : ''}
+      </span>
+      <span class="scorecard-points">${player.totalPoints} pts</span>
+    `;
+    scoreList.appendChild(item);
+  });
+  
+  $('#scorecard-modal').classList.remove('hidden');
+}
+
+function hideScorecard() {
+  $('#scorecard-modal').classList.add('hidden');
+}
+
+// ==================== AMNESIC MODE ====================
+let amnesicAudio = null;
+
+function showAmnesicMode() {
+  const playerList = $('#amnesic-players');
+  playerList.innerHTML = '';
+  
+  // Hide word display initially
+  $('#amnesic-word-display').classList.add('hidden');
+  
+  // Show all players (including eliminated for reference)
+  state.players.forEach(player => {
+    const btn = document.createElement('button');
+    btn.className = 'amnesic-player-btn' + (player.eliminated ? ' eliminated' : '');
+    btn.innerHTML = `
+      <span class="amnesic-player-avatar">${player.name.charAt(0).toUpperCase()}</span>
+      <span class="amnesic-player-name">${escapeHtml(player.name)}</span>
+      ${player.eliminated ? '<span>☠️</span>' : ''}
+    `;
+    
+    if (!player.eliminated) {
+      btn.addEventListener('click', () => showAmnesicWord(player));
+    }
+    
+    playerList.appendChild(btn);
+  });
+  
+  // Play amnesic mode music
+  amnesicAudio = playAudio('amnesicMode', 0.3, true);
+  
+  $('#amnesic-modal').classList.remove('hidden');
+}
+
+function showAmnesicWord(player) {
+  const wordDisplay = $('#amnesic-word-display');
+  const wordEl = $('#amnesic-word');
+  
+  if (player.role === 'mrwhite') {
+    wordEl.textContent = "You're Mr. White - No word!";
+    wordEl.className = 'amnesic-word mrwhite';
+  } else {
+    wordEl.textContent = player.word;
+    wordEl.className = 'amnesic-word';
+  }
+  
+  wordDisplay.classList.remove('hidden');
+}
+
+function hideAmnesicWord() {
+  $('#amnesic-word-display').classList.add('hidden');
+}
+
+function hideAmnesicMode() {
+  // Stop the music
+  if (amnesicAudio) {
+    stopAudio(amnesicAudio);
+    amnesicAudio = null;
+  }
+  
+  $('#amnesic-modal').classList.add('hidden');
+  hideAmnesicWord();
 }
 
 // Utility

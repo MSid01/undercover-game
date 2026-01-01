@@ -647,6 +647,11 @@
             <p><strong>Tips:</strong> Use metaphors, related concepts, or feelings about your word.</p>
           </div>
 
+          <div class="discussion-actions">
+            <button id="amnesic-mode-btn" class="btn btn-secondary">🧠 Amnesic Mode</button>
+            <button id="view-scores-btn" class="btn btn-secondary">🏆 Scores</button>
+          </div>
+
           <button id="start-elimination-btn" class="btn btn-danger btn-large">🗳️ Proceed to Elimination</button>
         </div>
       </div>
@@ -798,6 +803,31 @@
         <button class="modal-close" id="close-stats-modal">×</button>
         <h2>📊 Player Stats</h2>
         <div id="stats-content"></div>
+      </div>
+    </div>
+
+    <!-- Scorecard Modal -->
+    <div id="scorecard-modal" class="modal hidden">
+      <div class="modal-content">
+        <button class="modal-close" id="close-scorecard-modal">×</button>
+        <h2>🏆 Current Scores</h2>
+        <p class="modal-subtitle" id="scorecard-round">Game Round 1</p>
+        <div id="scorecard-list" class="scorecard-list"></div>
+      </div>
+    </div>
+
+    <!-- Amnesic Mode Modal -->
+    <div id="amnesic-modal" class="modal hidden">
+      <div class="modal-content amnesic-modal-content">
+        <button class="modal-close" id="close-amnesic-modal">×</button>
+        <h2>🧠 Amnesic Mode</h2>
+        <p class="modal-subtitle">Forgot your word? Tap your name to reveal it secretly.</p>
+        <div id="amnesic-players" class="amnesic-players"></div>
+        <div id="amnesic-word-display" class="amnesic-word-display hidden">
+          <p class="amnesic-word-label">Your word is:</p>
+          <div id="amnesic-word" class="amnesic-word"></div>
+          <button id="hide-amnesic-word-btn" class="btn btn-secondary">🙈 Hide Word</button>
+        </div>
       </div>
     </div>
 

@@ -107,12 +107,12 @@ app.post('/api/generate-words', async (req, res) => {
 
 // Health check
 app.get('/api/health', async (req, res) => {
-  res.json({ 
+    res.json({
     status: 'OK', 
     rooms: rooms.size, 
     tokens: playerTokens.size, 
     wordPairs: await getPairCount(),
-    timestamp: new Date().toISOString() 
+      timestamp: new Date().toISOString()
   });
 });
 
