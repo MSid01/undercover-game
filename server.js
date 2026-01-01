@@ -116,6 +116,24 @@ app.get('/api/health', async (req, res) => {
   });
 });
 
+// Get current word by token (for polling fallback)
+app.get('/api/player/word/:token', (req, res) => {
+  const { token } = req.params;
+  const tokenData = playerTokens.get(token);
+  
+  if (!tokenData) {
+    return res.status(404).json({ success: false, error: 'Token not found' });
+  }
+  
+  res.json({
+    success: true,
+    playerName: tokenData.playerName,
+    word: tokenData.word,
+    role: tokenData.role,
+    hasWord: tokenData.word !== undefined
+  });
+});
+
 // Word pairs stats
 app.get('/api/words/stats', async (req, res) => {
   res.json({ 
