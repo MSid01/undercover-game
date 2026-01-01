@@ -944,7 +944,7 @@ function initSocket() {
       clearToken();
       state.myToken = null;
     }
-    alert(data.reason || 'Room was closed');
+    showToast(data.reason || 'Room was closed', 'warning');
     resetOnlineState();
     showScreen('landing');
     initApp();
@@ -1101,7 +1101,7 @@ function updateHostSettingsUI() {
 function createRoom() {
   const hostName = $('#host-name-input').value.trim();
   if (!hostName) {
-    alert('Please enter your name');
+    showToast('Please enter your name', 'warning');
     $('#host-name-input').focus();
     return;
   }
@@ -1121,7 +1121,7 @@ function createRoom() {
       state.onlinePlayers = response.room.players;
       showHostLobby();
     } else {
-      alert('Failed to create room');
+      showToast('Failed to create room', 'error');
     }
   });
 }
@@ -1253,7 +1253,7 @@ function startOnlineGame() {
     if (response.success) {
       showScreen('host-game');
     } else {
-      alert(response.error || 'Failed to start game');
+      showToast(response.error || 'Failed to start game', 'error');
     }
   });
 }
@@ -1437,7 +1437,7 @@ function saveCurrentGroup() {
   
   const groups = getSavedGroups();
   if (groups.some(g => g.name.toLowerCase() === groupName.toLowerCase())) {
-    alert('A group with this name already exists!');
+    showToast('A group with this name already exists!', 'warning');
     return;
   }
   
@@ -1571,7 +1571,7 @@ function addPlayerName() {
   const name = input.value.trim();
   if (!name) { input.focus(); return; }
   if (state.playerNames.some(n => n.toLowerCase() === name.toLowerCase())) {
-    alert('This name is already added!');
+    showToast('This name is already added!', 'warning');
     input.select();
     return;
   }
@@ -1641,7 +1641,7 @@ async function prepareGame() {
     showReadyScreen();
   } catch (error) {
     console.error('Error:', error);
-    alert('Failed to generate words.');
+    showToast('Failed to generate words', 'error');
     showScreen('name-entry');
   } finally {
     hideLoading();
@@ -1842,7 +1842,7 @@ function handleMrWhiteGuess() {
     endGame('mrwhite-guess');
   } else {
     playMrWhiteGuessAudio(false);
-    alert(`Wrong! The word was "${state.words.civilian}"`);
+    showToast('Wrong guess! Better luck next time.', 'error', 4000);
     $('#mrwhite-guess-section').classList.add('hidden');
     $('#continue-game-btn').classList.remove('hidden');
   }
@@ -2100,6 +2100,33 @@ function hideAmnesicMode() {
   
   $('#amnesic-modal').classList.add('hidden');
   hideAmnesicWord();
+}
+
+// ==================== TOAST NOTIFICATIONS ====================
+function showToast(message, type = 'info', duration = 3000) {
+  const container = document.getElementById('toast-container');
+  
+  const icons = {
+    error: '❌',
+    success: '✅',
+    warning: '⚠️',
+    info: 'ℹ️'
+  };
+  
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `
+    <span class="toast-icon">${icons[type] || icons.info}</span>
+    <span class="toast-message">${message}</span>
+  `;
+  
+  container.appendChild(toast);
+  
+  // Auto remove after duration
+  setTimeout(() => {
+    toast.classList.add('hiding');
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
 }
 
 // ==================== CONFIRMATION MODAL ====================
