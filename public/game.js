@@ -62,6 +62,8 @@ const POINTS = {
 const audioCache = {};
 const AUDIO_FILES = {
   click: '/audios/click.mp3',
+  showWord: '/audios/show-word.mp3',
+  seenWord: '/audios/i-have-seen-word.mp3',
   civiliansWin: '/audios/civilians-win.mp3',
   infiltratorsWin: '/audios/infiltrators-win.mp3',
   civilianDie: '/audios/civilian-die.mp3',
@@ -1469,6 +1471,7 @@ function updateRevealUI() {
 function showPlayerWord() {
   const player = state.players[state.currentRevealIndex];
   $('#reveal-pass').classList.add('hidden');
+  playAudio('showWord', 0.5);
   if (player.role === 'mrwhite') {
     $('#reveal-mrwhite').classList.remove('hidden');
   } else {
@@ -1479,6 +1482,7 @@ function showPlayerWord() {
 }
 
 function hideWordAndContinue() {
+  playAudio('seenWord', 0.5);
   moveToNextPlayer();
 }
 

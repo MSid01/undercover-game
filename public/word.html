@@ -357,6 +357,34 @@
       document.getElementById(stateId).classList.add('active');
     }
     
+    // Audio system
+    const audioCache = {};
+    const AUDIO_FILES = {
+      showWord: '/audios/show-word.mp3',
+      seenWord: '/audios/i-have-seen-word.mp3',
+      notification: '/audios/click.mp3'
+    };
+    
+    function prefetchAudio() {
+      Object.entries(AUDIO_FILES).forEach(([key, src]) => {
+        const audio = new Audio();
+        audio.preload = 'auto';
+        audio.src = src;
+        audioCache[key] = audio;
+      });
+    }
+    
+    function playAudio(key, volume = 0.5) {
+      try {
+        const cachedAudio = audioCache[key];
+        if (cachedAudio) {
+          const audio = cachedAudio.cloneNode();
+          audio.volume = volume;
+          audio.play().catch(() => {});
+        }
+      } catch (e) {}
+    }
+    
     // Vibrate phone if supported (for new word notification)
     function vibratePhone() {
       if ('vibrate' in navigator) {
@@ -372,17 +400,16 @@
       }
     }
     
-    // Play notification sound (optional)
+    // Play notification sound
     function playNotificationSound() {
-      try {
-        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleEAKInDC6ty1ay8TRIzV6L1rFA4rhNTouW89Kl+q3OqsWBIJQ5HW57xfDhBNn9znqFAJCUaR1eW3WAwOR5XX5a1VCQpFj9TksVoNDkSO0+OtVwoKQ4zS4q5aDg5Ci9Hgr1sODkCJ0N+wXA8OPofO3rFdEA49hc3csF4RDzyDy9qxXxINOoHJ2LJgEw45f8fWsmETDTd9xdSzYhQNNXvD0rRjFQ00ecHQtWQWDTJ3v862ZRcNMHW9zLdmGA0ucrq');
-        audio.volume = 0.3;
-        audio.play().catch(() => {});
-      } catch (e) {}
+      playAudio('notification', 0.3);
     }
     
     // Initialize
     document.addEventListener('DOMContentLoaded', () => {
+      // Prefetch audio
+      prefetchAudio();
+      
       const urlParams = new URLSearchParams(window.location.search);
       const token = urlParams.get('t');
       
@@ -531,6 +558,8 @@
     }
     
     function showWord() {
+      playAudio('showWord', 0.5);
+      
       if (myRole === 'mrwhite') {
         showState('mrwhite-state');
       } else {
@@ -546,6 +575,8 @@
     }
     
     function hideWord() {
+      playAudio('seenWord', 0.5);
+      
       if (myRole === 'mrwhite') {
         showState('ingame-mrwhite-state');
       } else {
