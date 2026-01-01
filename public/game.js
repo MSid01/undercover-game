@@ -1545,11 +1545,34 @@ function addPointsToSession() {
   saveSession();
 }
 
+// Play win audio
+function playWinAudio(winner) {
+  try {
+    let audioFile = null;
+    if (winner === 'civilian') {
+      audioFile = '/audios/civilians-win.mp3';
+    } else if (winner === 'undercover' || winner === 'mrwhite') {
+      audioFile = '/audios/infiltrtors-win.mp3';
+    }
+    
+    if (audioFile) {
+      const audio = new Audio(audioFile);
+      audio.volume = 0.7;
+      audio.play().catch(err => console.log('Audio play failed:', err));
+    }
+  } catch (e) {
+    console.log('Audio not supported:', e);
+  }
+}
+
 // Game over
 function endGame(winner) {
   const emojiEl = $('#winner-emoji');
   const titleEl = $('#winner-title');
   const subtitleEl = $('#winner-subtitle');
+  
+  // Play victory audio
+  playWinAudio(winner);
   
   if (winner === 'civilian') {
     emojiEl.textContent = '🎉'; titleEl.textContent = 'Civilians Win!'; titleEl.className = 'civilian';
