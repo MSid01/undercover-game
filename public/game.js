@@ -731,6 +731,10 @@ function initEventListeners() {
   $('#close-amnesic-modal').addEventListener('click', hideAmnesicMode);
   $('#hide-amnesic-word-btn').addEventListener('click', hideAmnesicWord);
 
+  // Confirmation modal
+  $('#confirm-cancel-btn').addEventListener('click', hideConfirmModal);
+  $('#confirm-ok-btn').addEventListener('click', handleConfirmOk);
+
   $('#play-again-btn').addEventListener('click', playNextRound);
   $('#end-session-btn').addEventListener('click', endSession);
   $('#close-stats-modal').addEventListener('click', () => $('#stats-modal').classList.add('hidden'));
@@ -1709,15 +1713,26 @@ function updateRevealUI() {
 
 function showPlayerWord() {
   const player = state.players[state.currentRevealIndex];
-  $('#reveal-pass').classList.add('hidden');
-  playAudio('showWord', 0.5);
-  if (player.role === 'mrwhite') {
-    $('#reveal-mrwhite').classList.remove('hidden');
-  } else {
-    $('#word-display').textContent = player.word;
-    $('#word-display').className = 'word-display';
-    $('#reveal-word').classList.remove('hidden');
-  }
+  
+  // Show confirmation modal
+  showConfirmModal({
+    icon: '👀',
+    title: `Are you ${player.name}?`,
+    message: `Make sure only <strong>${escapeHtml(player.name)}</strong> is looking at the screen before revealing the word.`,
+    confirmText: 'Show My Word',
+    confirmClass: 'btn-primary',
+    onConfirm: () => {
+      $('#reveal-pass').classList.add('hidden');
+      playAudio('showWord', 0.5);
+      if (player.role === 'mrwhite') {
+        $('#reveal-mrwhite').classList.remove('hidden');
+      } else {
+        $('#word-display').textContent = player.word;
+        $('#word-display').className = 'word-display';
+        $('#reveal-word').classList.remove('hidden');
+      }
+    }
+  });
 }
 
 function hideWordAndContinue() {
@@ -1771,10 +1786,19 @@ function updateEliminationUI() {
 }
 
 function eliminatePlayer(playerName) {
-  state.eliminatedThisRound = playerName;
-  const player = state.players.find(p => p.name === playerName);
-  player.eliminated = true;
-  showRoleReveal();
+  // Show confirmation modal
+  showConfirmModal({
+    icon: '🎯',
+    title: 'Eliminate Player?',
+    message: `Are you sure you want to eliminate <strong>${escapeHtml(playerName)}</strong>? This action cannot be undone.`,
+    confirmText: 'Eliminate',
+    onConfirm: () => {
+      state.eliminatedThisRound = playerName;
+      const player = state.players.find(p => p.name === playerName);
+      player.eliminated = true;
+      showRoleReveal();
+    }
+  });
 }
 
 function showRoleReveal() {
@@ -2039,18 +2063,28 @@ function showAmnesicMode() {
 }
 
 function showAmnesicWord(player) {
-  const wordDisplay = $('#amnesic-word-display');
-  const wordEl = $('#amnesic-word');
-  
-  if (player.role === 'mrwhite') {
-    wordEl.textContent = "You're Mr. White - No word!";
-    wordEl.className = 'amnesic-word mrwhite';
-  } else {
-    wordEl.textContent = player.word;
-    wordEl.className = 'amnesic-word';
-  }
-  
-  wordDisplay.classList.remove('hidden');
+  // Show confirmation modal
+  showConfirmModal({
+    icon: '🧠',
+    title: `Show ${player.name}'s Word?`,
+    message: `Only <strong>${escapeHtml(player.name)}</strong> should see this. Make sure others aren't looking!`,
+    confirmText: 'Show Word',
+    confirmClass: 'btn-primary',
+    onConfirm: () => {
+      const wordDisplay = $('#amnesic-word-display');
+      const wordEl = $('#amnesic-word');
+      
+      if (player.role === 'mrwhite') {
+        wordEl.textContent = "You're Mr. White - No word!";
+        wordEl.className = 'amnesic-word mrwhite';
+      } else {
+        wordEl.textContent = player.word;
+        wordEl.className = 'amnesic-word';
+      }
+      
+      wordDisplay.classList.remove('hidden');
+    }
+  });
 }
 
 function hideAmnesicWord() {
@@ -2066,6 +2100,34 @@ function hideAmnesicMode() {
   
   $('#amnesic-modal').classList.add('hidden');
   hideAmnesicWord();
+}
+
+// ==================== CONFIRMATION MODAL ====================
+let confirmCallback = null;
+
+function showConfirmModal({ icon = '⚠️', title, message, confirmText = 'Confirm', confirmClass = 'btn-danger', onConfirm }) {
+  $('#confirm-icon').textContent = icon;
+  $('#confirm-title').textContent = title;
+  $('#confirm-message').innerHTML = message;
+  
+  const confirmBtn = $('#confirm-ok-btn');
+  confirmBtn.textContent = confirmText;
+  confirmBtn.className = `btn ${confirmClass}`;
+  
+  confirmCallback = onConfirm;
+  $('#confirm-modal').classList.remove('hidden');
+}
+
+function hideConfirmModal() {
+  $('#confirm-modal').classList.add('hidden');
+  confirmCallback = null;
+}
+
+function handleConfirmOk() {
+  if (confirmCallback) {
+    confirmCallback();
+  }
+  hideConfirmModal();
 }
 
 // Utility

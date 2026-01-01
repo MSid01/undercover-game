@@ -2532,6 +2532,41 @@ body {
   text-shadow: none;
 }
 
+/* ==================== CONFIRMATION MODAL ==================== */
+.confirm-modal-content {
+  text-align: center;
+  padding: 28px;
+}
+
+.confirm-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+}
+
+.confirm-modal-content h3 {
+  font-size: 1.3rem;
+  margin-bottom: 12px;
+}
+
+.confirm-message {
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.confirm-message strong {
+  color: var(--text-primary);
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.confirm-actions .btn {
+  flex: 1;
+}
+
 /* ==================== RESPONSIVE ==================== */
 @media (max-width: 400px) {
   .title {
