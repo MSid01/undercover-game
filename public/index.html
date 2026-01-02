@@ -2,11 +2,28 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Undercover - Word Game</title>
+  
+  <!-- PWA Meta Tags -->
+  <meta name="description" content="A social deduction word game of deception and discovery">
+  <meta name="theme-color" content="#e63946">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Undercover">
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json">
+  
+  <!-- Icons -->
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+  <link rel="apple-touch-icon" href="/icons/icon.svg">
+  
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Crimson+Pro:wght@400;600&display=swap" rel="stylesheet">
+  
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -556,40 +573,6 @@
             <div id="ready-players-list" class="ready-players-list"></div>
           </div>
 
-          <!-- Category Selection -->
-          <div class="category-section">
-            <h4>📚 Word Category</h4>
-            <p class="category-hint">Choose a theme or use generic words from database</p>
-            
-            <div class="category-chips">
-              <button class="category-chip selected" data-category="">🎯 All/Generic</button>
-              <button class="category-chip" data-category="Food">🍕 Food</button>
-              <button class="category-chip" data-category="Animals">🐾 Animals</button>
-              <button class="category-chip" data-category="Tech">💻 Tech</button>
-              <button class="category-chip" data-category="Sports">⚽ Sports</button>
-              <button class="category-chip" data-category="Movies & TV">🎬 Movies</button>
-              <button class="category-chip" data-category="Indian Culture">🇮🇳 Indian</button>
-              <button class="category-chip" data-category="Gaming">🎮 Gaming</button>
-              <button class="category-chip" data-category="Bollywood">🎭 Bollywood</button>
-              <button class="category-chip" data-category="Science">🔬 Science</button>
-              <button class="category-chip" data-category="Nature">🌿 Nature</button>
-              <button class="category-chip" data-category="Fashion">👗 Fashion</button>
-            </div>
-            
-            <div class="custom-category-section">
-              <label for="custom-category-input">Or enter custom theme:</label>
-              <div class="custom-category-input-group">
-                <input type="text" id="custom-category-input" class="custom-category-input" 
-                       placeholder="e.g., Harry Potter, Cricket, Anime..." maxlength="50">
-                <button id="use-custom-category-btn" class="btn btn-secondary btn-small">Use</button>
-              </div>
-            </div>
-            
-            <div id="category-status" class="category-status hidden">
-              <span id="category-status-text"></span>
-            </div>
-          </div>
-
           <div id="save-group-section" class="save-group-section">
             <button id="save-group-btn" class="btn btn-secondary">💾 Save as Group</button>
           </div>
@@ -623,6 +606,22 @@
                   <img id="player-qr-code" class="qr-code-img" src="" alt="QR Code">
                 </div>
                 <p class="qr-hint">Scan to see your word privately</p>
+                
+                <div class="share-link-section">
+                  <p class="share-hint">Or share the link:</p>
+                  <div class="share-buttons">
+                    <button id="copy-link-btn" class="share-btn">
+                      <span class="share-icon">📋</span> Copy Link
+                    </button>
+                    <button id="whatsapp-share-btn" class="share-btn whatsapp">
+                      <span class="share-icon">💬</span> WhatsApp
+                    </button>
+                    <button id="native-share-btn" class="share-btn native hidden">
+                      <span class="share-icon">📤</span> Share
+                    </button>
+                  </div>
+                </div>
+                
                 <button id="player-used-phone-btn" class="btn btn-secondary">
                   ✓ I've seen it on my phone
                 </button>
@@ -892,5 +891,20 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="game.js"></script>
+  
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then((registration) => {
+            console.log('✅ Service Worker registered:', registration.scope);
+          })
+          .catch((error) => {
+            console.log('❌ Service Worker registration failed:', error);
+          });
+      });
+    }
+  </script>
 </body>
 </html>

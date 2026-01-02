@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="80" fill="#0a0a0f"/>
+  <circle cx="256" cy="200" r="80" fill="#e63946"/>
+  <circle cx="180" cy="350" r="50" fill="#f4a261"/>
+  <circle cx="332" cy="350" r="50" fill="#2a9d8f"/>
+  <text x="256" y="480" text-anchor="middle" font-family="Arial" font-size="60" fill="white">🎭</text>
+</svg>
+

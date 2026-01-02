@@ -15,12 +15,6 @@ const state = {
   eliminatedThisRound: null,
   mrWhiteGuessedCorrectly: false,
   
-  // Category selection (empty = use DB, otherwise custom generation)
-  selectedCategory: '',
-  categoryPairs: [], // Locally stored pairs for custom category
-  categoryPairsUsed: 0, // Track how many pairs used
-  isGeneratingCategory: false,
-  
   // Offline room data (with QR codes)
   offlineRoomCode: null,
   playerQRCodes: {}, // { playerName: qrCodeDataUrl }
@@ -53,8 +47,7 @@ const STORAGE_KEYS = {
   SESSION: 'undercover_session',
   PLAYER_STATS: 'undercover_player_stats',
   MY_TOKEN: 'undercover_my_token',
-  PLAYED_PAIRS: 'undercover_played_pairs',
-  CATEGORY_PAIRS: 'undercover_category_pairs' // { category, pairs, usedIndex }
+  PLAYED_PAIRS: 'undercover_played_pairs'
 };
 
 // Points
@@ -244,11 +237,8 @@ function getPlayedPairsCount() {
 let prefetchedWordPair = null;
 let isPrefetching = false;
 
-// Prefetch word pair (only for generic/DB mode)
+// Prefetch word pair from database
 async function prefetchNextWordPair() {
-  // Don't prefetch if using custom category (we have local pairs)
-  if (state.selectedCategory) return;
-  
   if (isPrefetching) return;
   isPrefetching = true;
   
@@ -273,47 +263,8 @@ async function prefetchNextWordPair() {
   }
 }
 
-// Get word pair for the round
+// Get word pair for the round from database
 async function getWordPairForRound() {
-  // If using custom category with local pairs
-  if (state.selectedCategory && state.categoryPairs.length > 0) {
-    return getWordPairFromCategory();
-  }
-  
-  // Generic mode: use DB via API
-  return getWordPairFromDB();
-}
-
-// Get word pair from locally stored category pairs
-function getWordPairFromCategory() {
-  // Check if we need to pre-generate more
-  checkAndPregenerateCategoryPairs();
-  
-  // Find an unplayed pair from our local cache
-  while (state.categoryPairsUsed < state.categoryPairs.length) {
-    const pair = state.categoryPairs[state.categoryPairsUsed];
-    state.categoryPairsUsed++;
-    saveCategoryPairs();
-    
-    if (!hasPlayedPair(pair.civilianWord, pair.undercoverWord)) {
-      // Randomly swap civilian/undercover
-      if (Math.random() > 0.5) {
-        return { civilianWord: pair.civilianWord, undercoverWord: pair.undercoverWord };
-      } else {
-        return { civilianWord: pair.undercoverWord, undercoverWord: pair.civilianWord };
-      }
-    }
-    console.log(`⏭️ Skipping already played pair: ${pair.civilianWord} / ${pair.undercoverWord}`);
-  }
-  
-  // All pairs used - reset and start over (or fallback to DB)
-  console.warn('⚠️ All category pairs used, falling back to DB');
-  state.categoryPairsUsed = 0;
-  return getWordPairFromDB();
-}
-
-// Get word pair from database via API
-async function getWordPairFromDB() {
   // Use prefetched pair if available
   if (prefetchedWordPair) {
     const pair = prefetchedWordPair;
@@ -383,10 +334,75 @@ function updatePlayerStats(playerName, role, won, points) {
   savePlayerStats(stats);
 }
 
+// ==================== BACK BUTTON PREVENTION ====================
+function setupBackButtonPrevention() {
+  // Push initial state
+  history.pushState(null, '', window.location.href);
+  
+  // Listen for back/forward button
+  window.addEventListener('popstate', (e) => {
+    // Check if game is in progress
+    if (isGameInProgress()) {
+      // Push state again to prevent navigation
+      history.pushState(null, '', window.location.href);
+      
+      // Show confirmation
+      showConfirmModal({
+        icon: '⚠️',
+        title: 'Leave Game?',
+        message: 'Are you sure you want to leave? Your current game progress will be lost.',
+        confirmText: 'Leave',
+        confirmClass: 'btn-danger',
+        onConfirm: () => {
+          // Allow navigation by going back
+          window.removeEventListener('popstate', arguments.callee);
+          history.back();
+        }
+      });
+    }
+  });
+  
+  // Warn before closing/refreshing tab
+  window.addEventListener('beforeunload', (e) => {
+    if (isGameInProgress()) {
+      e.preventDefault();
+      e.returnValue = '';
+      return '';
+    }
+  });
+}
+
+// Check if there's an active game
+function isGameInProgress() {
+  // Game is in progress if:
+  // - We're past the landing screen
+  // - There are players set up
+  // - Or session is active
+  const activeScreens = ['reveal-screen', 'discussion-screen', 'elimination-screen', 'role-reveal-screen'];
+  const currentScreen = document.querySelector('.screen.active');
+  
+  if (currentScreen && activeScreens.includes(currentScreen.id)) {
+    return true;
+  }
+  
+  if (state.session && state.session.active && state.session.players.length > 0) {
+    return true;
+  }
+  
+  if (state.players && state.players.length > 0 && state.words && state.words.civilian) {
+    return true;
+  }
+  
+  return false;
+}
+
 // ==================== INITIALIZATION ====================
 document.addEventListener('DOMContentLoaded', () => {
   // Prefetch audio files
   prefetchAudio();
+  
+  // Prevent accidental back navigation
+  setupBackButtonPrevention();
   
   // Always initialize event listeners first
   initEventListeners();
@@ -415,193 +431,9 @@ function initApp() {
   updatePlayerCountUI();
   updateRoleConfigUI();
   checkForSavedSession();
-  loadSavedCategoryPairs();
   
-  // Start prefetching word pair in background (only for generic mode)
+  // Start prefetching word pair in background
   prefetchNextWordPair();
-}
-
-// ==================== CATEGORY FUNCTIONS ====================
-
-// Encode pairs for storage (simple base64)
-function encodePairs(pairs) {
-  return btoa(JSON.stringify(pairs));
-}
-
-// Decode pairs from storage
-function decodePairs(encoded) {
-  try {
-    return JSON.parse(atob(encoded));
-  } catch {
-    return null;
-  }
-}
-
-// Load saved category pairs from localStorage
-function loadSavedCategoryPairs() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEYS.CATEGORY_PAIRS);
-    if (saved) {
-      const data = JSON.parse(saved);
-      if (data.category && data.pairs) {
-        state.selectedCategory = data.category;
-        state.categoryPairs = decodePairs(data.pairs) || [];
-        state.categoryPairsUsed = data.usedIndex || 0;
-        updateCategoryChipsUI();
-        console.log(`📦 Loaded ${state.categoryPairs.length} pairs for "${data.category}", used: ${state.categoryPairsUsed}`);
-      }
-    }
-  } catch (error) {
-    console.error('Error loading category pairs:', error);
-  }
-}
-
-// Save category pairs to localStorage
-function saveCategoryPairs() {
-  if (state.selectedCategory && state.categoryPairs.length > 0) {
-    localStorage.setItem(STORAGE_KEYS.CATEGORY_PAIRS, JSON.stringify({
-      category: state.selectedCategory,
-      pairs: encodePairs(state.categoryPairs),
-      usedIndex: state.categoryPairsUsed
-    }));
-  } else {
-    localStorage.removeItem(STORAGE_KEYS.CATEGORY_PAIRS);
-  }
-}
-
-// Update category chips UI
-function updateCategoryChipsUI() {
-  $$('.category-chip').forEach(chip => {
-    chip.classList.toggle('selected', chip.dataset.category === state.selectedCategory);
-  });
-  $('#custom-category-input').value = '';
-}
-
-// Select a preset category
-function selectCategoryChip(category) {
-  // If same category selected, do nothing
-  if (state.selectedCategory === category) return;
-  
-  state.selectedCategory = category;
-  state.categoryPairs = [];
-  state.categoryPairsUsed = 0;
-  updateCategoryChipsUI();
-  
-  // Clear custom input
-  $('#custom-category-input').value = '';
-  
-  // If empty (generic), use DB - clear saved category pairs
-  if (!category) {
-    localStorage.removeItem(STORAGE_KEYS.CATEGORY_PAIRS);
-    showCategoryStatus('Using generic words from database', 'success');
-    prefetchNextWordPair();
-  } else {
-    // Need to generate pairs for this category
-    generateCategoryPairs(category);
-  }
-}
-
-// Use custom category
-function useCustomCategory() {
-  const input = $('#custom-category-input');
-  const category = input.value.trim();
-  
-  if (!category) {
-    input.focus();
-    return;
-  }
-  
-  // Deselect all chips
-  $$('.category-chip').forEach(chip => chip.classList.remove('selected'));
-  
-  state.selectedCategory = category;
-  state.categoryPairs = [];
-  state.categoryPairsUsed = 0;
-  
-  generateCategoryPairs(category);
-}
-
-// Show category status message
-function showCategoryStatus(message, type = '') {
-  const status = $('#category-status');
-  const text = $('#category-status-text');
-  
-  status.classList.remove('hidden', 'loading', 'success', 'error');
-  if (type) status.classList.add(type);
-  text.textContent = message;
-  
-  if (type === 'success') {
-    setTimeout(() => status.classList.add('hidden'), 3000);
-  }
-}
-
-// Generate category-specific word pairs via API
-async function generateCategoryPairs(category) {
-  if (state.isGeneratingCategory) return;
-  
-  state.isGeneratingCategory = true;
-  showCategoryStatus(`🎯 Generating words for "${category}"...`, 'loading');
-  
-  try {
-    const response = await fetch('/api/generate-category-words', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ category })
-    });
-    
-    const data = await response.json();
-    
-    if (data.success && data.pairs && data.pairs.length > 0) {
-      state.categoryPairs = data.pairs;
-      state.categoryPairsUsed = 0;
-      saveCategoryPairs();
-      
-      showCategoryStatus(`✅ Ready! ${data.pairs.length} word pairs generated`, 'success');
-      console.log(`🎉 Generated ${data.pairs.length} pairs for "${category}"`);
-    } else {
-      throw new Error(data.error || 'No pairs generated');
-    }
-  } catch (error) {
-    console.error('Category generation error:', error);
-    showCategoryStatus(`❌ Failed to generate words. Try again or use generic.`, 'error');
-    
-    // Reset to generic
-    state.selectedCategory = '';
-    state.categoryPairs = [];
-    updateCategoryChipsUI();
-  } finally {
-    state.isGeneratingCategory = false;
-  }
-}
-
-// Pre-generate more category pairs if running low
-async function checkAndPregenerateCategoryPairs() {
-  // If using a category and less than 5 pairs remaining, generate more
-  if (state.selectedCategory && state.categoryPairs.length > 0) {
-    const remaining = state.categoryPairs.length - state.categoryPairsUsed;
-    if (remaining <= 5) {
-      console.log(`⚠️ Only ${remaining} pairs left, pre-generating more...`);
-      
-      try {
-        const response = await fetch('/api/generate-category-words', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ category: state.selectedCategory })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success && data.pairs && data.pairs.length > 0) {
-          // Append new pairs
-          state.categoryPairs = state.categoryPairs.concat(data.pairs);
-          saveCategoryPairs();
-          console.log(`✅ Added ${data.pairs.length} more pairs, total: ${state.categoryPairs.length}`);
-        }
-      } catch (error) {
-        console.error('Pre-generation error:', error);
-      }
-    }
-  }
 }
 
 function checkForSavedSession() {
@@ -697,15 +529,6 @@ function initEventListeners() {
 
   $('#start-reveal-btn').addEventListener('click', startWordReveal);
   $('#save-group-btn').addEventListener('click', () => $('#save-group-modal').classList.remove('hidden'));
-  
-  // Category selection (chips)
-  $$('.category-chip').forEach(chip => {
-    chip.addEventListener('click', () => selectCategoryChip(chip.dataset.category));
-  });
-  $('#use-custom-category-btn').addEventListener('click', useCustomCategory);
-  $('#custom-category-input').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') useCustomCategory();
-  });
 
   $('#close-save-modal').addEventListener('click', () => $('#save-group-modal').classList.add('hidden'));
   $('#cancel-save-btn').addEventListener('click', () => $('#save-group-modal').classList.add('hidden'));
@@ -719,6 +542,16 @@ function initEventListeners() {
   $('#hide-word-btn').addEventListener('click', hideWordAndContinue);
   $('#mrwhite-got-it-btn').addEventListener('click', hideWordAndContinue);
   $('#player-used-phone-btn').addEventListener('click', playerUsedPhone);
+  
+  // Share link buttons
+  $('#copy-link-btn').addEventListener('click', copyPlayerLink);
+  $('#whatsapp-share-btn').addEventListener('click', shareViaWhatsApp);
+  $('#native-share-btn').addEventListener('click', shareViaNative);
+  
+  // Show native share button if supported
+  if (navigator.share) {
+    $('#native-share-btn').classList.remove('hidden');
+  }
 
   $('#start-elimination-btn').addEventListener('click', startElimination);
   $('#continue-game-btn').addEventListener('click', continueAfterElimination);
@@ -1003,6 +836,66 @@ function playerUsedPhone() {
     player.seenViaPhone = true;
   }
   moveToNextPlayer();
+}
+
+// Get current player's word link
+function getCurrentPlayerLink() {
+  const player = state.players[state.currentRevealIndex];
+  if (player && state.playerTokens[player.name]) {
+    const token = state.playerTokens[player.name];
+    return `${window.location.origin}/word?t=${token}`;
+  }
+  return null;
+}
+
+// Copy player link to clipboard
+function copyPlayerLink() {
+  const link = getCurrentPlayerLink();
+  if (!link) return;
+  
+  navigator.clipboard.writeText(link).then(() => {
+    const btn = $('#copy-link-btn');
+    btn.classList.add('copied');
+    btn.innerHTML = '<span class="share-icon">✓</span> Copied!';
+    showToast('Link copied to clipboard!', 'success');
+    
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = '<span class="share-icon">📋</span> Copy Link';
+    }, 2000);
+  }).catch(() => {
+    showToast('Failed to copy link', 'error');
+  });
+}
+
+// Share via WhatsApp
+function shareViaWhatsApp() {
+  const player = state.players[state.currentRevealIndex];
+  const link = getCurrentPlayerLink();
+  if (!link || !player) return;
+  
+  const message = `🎭 Undercover Game\n\nHey ${player.name}! Tap to see your secret word:\n${link}`;
+  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+  window.open(whatsappUrl, '_blank');
+}
+
+// Share via native share API
+async function shareViaNative() {
+  const player = state.players[state.currentRevealIndex];
+  const link = getCurrentPlayerLink();
+  if (!link || !player) return;
+  
+  try {
+    await navigator.share({
+      title: 'Undercover Game - Your Word',
+      text: `Hey ${player.name}! Tap to see your secret word for Undercover:`,
+      url: link
+    });
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      showToast('Could not share', 'error');
+    }
+  }
 }
 
 // Update tokens for new round (keeps same QR codes, just updates words)
