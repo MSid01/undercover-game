@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Undercover - Word Game</title>
+  <title>Outlier - Word Game</title>
   
   <!-- PWA Meta Tags -->
   <meta name="description" content="A social deduction word game of deception and discovery">
   <meta name="theme-color" content="#e63946">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Undercover">
+  <meta name="apple-mobile-web-app-title" content="Outlier">
   
   <!-- PWA Manifest -->
   <link rel="manifest" href="/manifest.json">
@@ -33,10 +33,15 @@
     <!-- 1. Landing Screen -->
     <div id="landing-screen" class="screen active">
       <div class="container center-content">
+        <!-- Resume button at top right -->
+        <button id="resume-icon-btn" class="icon-btn-top-right hidden" title="Resume Game">
+          <span class="icon-btn-emoji">⏸️</span>
+        </button>
+        
         <div class="landing-content">
           <div class="logo-container">
             <div class="logo-icon">🎭</div>
-            <h1 class="title">UNDERCOVER</h1>
+            <h1 class="title">OUTLIER</h1>
             <p class="tagline">A game of words & deception</p>
           </div>
           
@@ -47,9 +52,6 @@
         <div class="landing-bottom-icons">
           <button id="how-to-play-btn" class="icon-btn" title="How to Play">
             <img src="/icons/rules.png" alt="Rules" class="icon-btn-img">
-          </button>
-          <button id="resume-icon-btn" class="icon-btn hidden" title="Resume Game">
-            <span class="icon-btn-emoji">⏸️</span>
           </button>
           <button id="all-stats-btn" class="icon-btn" title="Overall Stats">
             <img src="/icons/stats.png" alt="Stats" class="icon-btn-img">
@@ -148,10 +150,10 @@
             </button>
           </div>
           
-          <!-- Mr. White -->
+          <!-- Ghost -->
           <div id="token-mrwhite-state" class="word-state hidden">
             <div class="mrwhite-icon">👻</div>
-            <h2>You are Mr. White</h2>
+            <h2>You are the Ghost</h2>
             <p class="mrwhite-description">
               You don't have a word!<br>
               Listen to others and try to blend in.
@@ -237,7 +239,7 @@
           </div>
           
           <div class="setting-row">
-            <label>Undercover</label>
+            <label>Outlier</label>
             <div class="inline-stepper">
               <button class="stepper-btn" id="host-decrease-undercover">−</button>
               <span id="host-undercover-count">1</span>
@@ -246,7 +248,7 @@
           </div>
           
           <div class="setting-row">
-            <label>Mr. White</label>
+            <label>Ghost</label>
             <div class="inline-stepper">
               <button class="stepper-btn" id="host-decrease-mrwhite">−</button>
               <span id="host-mrwhite-count">0</span>
@@ -278,8 +280,8 @@
           </div>
 
           <div class="lobby-settings-summary">
-            <span>🕵️ <span id="lobby-undercover-count">1</span> Undercover</span>
-            <span>👻 <span id="lobby-mrwhite-count">0</span> Mr. White</span>
+            <span>🕵️ <span id="lobby-undercover-count">1</span> Outlier</span>
+            <span>👻 <span id="lobby-mrwhite-count">0</span> Ghost</span>
           </div>
 
           <button id="start-online-game-btn" class="btn btn-primary btn-large btn-glow" disabled>
@@ -349,7 +351,7 @@
           
           <div id="online-mrwhite-state" class="word-state hidden">
             <div class="mrwhite-icon">👻</div>
-            <h2>You are Mr. White</h2>
+            <h2>You are the Ghost</h2>
             <p class="mrwhite-description">
               You don't have a word!<br>
               Listen to others and try to blend in.
@@ -446,9 +448,9 @@
         <div class="role-config-cards">
           <div class="role-config-card">
             <div class="role-header">
-              <div class="role-icon undercover"><img src="/icons/undercover.png" alt="Undercover"></div>
+              <div class="role-icon undercover"><img src="/icons/undercover.png" alt="Outlier"></div>
               <div class="role-info">
-                <h3>Undercover</h3>
+                <h3>Outlier</h3>
                 <p>Gets a similar but different word</p>
               </div>
             </div>
@@ -461,9 +463,9 @@
 
           <div class="role-config-card">
             <div class="role-header">
-              <div class="role-icon mrwhite"><img src="/icons/mr-white.png" alt="Mr. White"></div>
+              <div class="role-icon mrwhite"><img src="/icons/mr-white.png" alt="Ghost"></div>
               <div class="role-info">
-                <h3>Mr. White</h3>
+                <h3>Ghost</h3>
                 <p>Gets no word, must bluff</p>
               </div>
             </div>
@@ -604,10 +606,10 @@
             <button id="hide-word-btn" class="btn btn-secondary btn-large">Got it! Hide Word</button>
           </div>
 
-          <!-- Mr. White state -->
+          <!-- Ghost state -->
           <div id="reveal-mrwhite" class="reveal-state hidden">
             <div class="mrwhite-icon">👻</div>
-            <h2>You are Mr. White</h2>
+            <h2>You are the Ghost</h2>
             <p class="mrwhite-description">
               You don't have a word!<br>
               Listen to others and try to blend in.<br>
@@ -686,7 +688,7 @@
           </div>
 
           <div id="mrwhite-guess-section" class="mrwhite-guess hidden">
-            <h3>🎯 Mr. White's Last Chance!</h3>
+            <h3>🎯 Ghost's Last Chance!</h3>
             <p>Guess the civilian word to steal the win!</p>
             <input type="text" id="mrwhite-guess-input" class="guess-input" placeholder="Enter your guess...">
             <button id="submit-guess-btn" class="btn btn-primary">Submit Guess</button>
@@ -717,7 +719,7 @@
                 <span id="final-civilian-word" class="word-text"></span>
               </div>
               <div class="final-word undercover">
-                <span class="word-type">Undercover</span>
+                <span class="word-type">Outlier</span>
                 <span id="final-undercover-word" class="word-text"></span>
               </div>
             </div>
@@ -729,7 +731,7 @@
           </div>
 
           <button id="play-again-btn" class="btn btn-primary btn-large btn-glow">🔄 Next Round</button>
-          <button id="end-session-btn" class="btn btn-ghost">End Session & Save Stats</button>
+          <button id="end-session-btn" class="btn btn-ghost">End Session</button>
         </div>
       </div>
     </div>
@@ -761,8 +763,8 @@
           <h3>🎭 Roles</h3>
           <ul>
             <li><strong>Civilians:</strong> Get the same word</li>
-            <li><strong>Undercover:</strong> Gets a similar but different word</li>
-            <li><strong>Mr. White:</strong> Gets no word at all!</li>
+            <li><strong>Outlier:</strong> Gets a similar but different word</li>
+            <li><strong>Ghost:</strong> Gets no word at all!</li>
           </ul>
         </div>
 
@@ -770,8 +772,8 @@
           <h3>🎯 Objective</h3>
           <ul>
             <li><strong>Civilians:</strong> Find and eliminate all infiltrators</li>
-            <li><strong>Undercover:</strong> Stay hidden until you outnumber civilians</li>
-            <li><strong>Mr. White:</strong> Survive or guess the civilian word if caught</li>
+            <li><strong>Outlier:</strong> Stay hidden until you outnumber civilians</li>
+            <li><strong>Ghost:</strong> Survive or guess the civilian word if caught</li>
           </ul>
         </div>
 
@@ -789,8 +791,8 @@
           <h3>🏆 Points</h3>
           <ul>
             <li><strong>Civilians win:</strong> All civilians get 2 pts</li>
-            <li><strong>Infiltrators win:</strong> Remaining Undercover 10 pts, Mr. White 6 pts</li>
-            <li><strong>Mr. White guesses:</strong> Only that Mr. White gets 12 pts</li>
+            <li><strong>Infiltrators win:</strong> Remaining Outlier 10 pts, Ghost 6 pts</li>
+            <li><strong>Ghost guesses:</strong> Only that Ghost gets 12 pts</li>
           </ul>
         </div>
 
@@ -816,20 +818,20 @@
     <div id="groups-modal" class="modal hidden">
       <div class="modal-content groups-modal-content">
         <button class="modal-close" id="close-groups-modal">×</button>
-        <h2>📁 Player Groups</h2>
+        <h2 id="groups-modal-title">📁 Player Groups</h2>
         
         <div id="groups-list-view" class="groups-view">
           <div id="groups-list" class="groups-list"></div>
           <p id="no-groups-msg" class="empty-message hidden">No saved groups yet</p>
           <button id="create-group-btn" class="btn btn-primary btn-with-icon">
-            <span>➕</span> Create New Group
+            Create
           </button>
         </div>
         
         <div id="groups-edit-view" class="groups-view hidden">
           <div class="edit-group-header">
             <button id="back-to-groups-btn" class="btn btn-ghost btn-small">← Back</button>
-            <input type="text" id="edit-group-name-input" class="name-input" placeholder="Group name..." maxlength="30">
+            <input type="text" id="edit-group-name-input" class="name-input group-name-input" placeholder="Group name..." maxlength="30">
           </div>
           
           <div class="edit-group-players">
@@ -837,16 +839,22 @@
             <div id="edit-group-players-list" class="edit-players-list"></div>
           </div>
           
-          <div class="add-player-to-group">
-            <input type="text" id="add-player-input" class="name-input" placeholder="Add player name..." maxlength="20">
-            <button id="add-player-to-group-btn" class="btn btn-secondary">Add</button>
-          </div>
-          
           <div class="edit-group-actions">
-            <button id="delete-group-btn" class="btn btn-danger">🗑️ Delete Group</button>
-            <button id="save-group-changes-btn" class="btn btn-primary">💾 Save Changes</button>
+            <button id="add-player-btn" class="btn btn-secondary">Add Player</button>
+            <button id="delete-group-btn" class="btn btn-danger hidden">Delete</button>
+            <button id="save-group-changes-btn" class="btn btn-primary">Save</button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Add Player to Group Modal -->
+    <div id="add-player-modal" class="modal hidden">
+      <div class="modal-content modal-small add-player-modal-content">
+        <button class="modal-close" id="close-add-player-modal">×</button>
+        <h3>Add Player</h3>
+        <input type="text" id="add-player-input" class="name-input" placeholder="Enter player name..." maxlength="20" autofocus>
+        <button id="add-player-to-group-btn" class="btn btn-primary btn-full-width">Add</button>
       </div>
     </div>
 

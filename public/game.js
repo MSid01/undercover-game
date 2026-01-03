@@ -48,12 +48,12 @@ const state = {
 
 // Storage keys
 const STORAGE_KEYS = {
-  GROUPS: 'undercover_groups',
-  RECENT_NAMES: 'undercover_recent_names',
-  SESSION: 'undercover_session',
-  PLAYER_STATS: 'undercover_player_stats',
-  MY_TOKEN: 'undercover_my_token',
-  PLAYED_PAIRS: 'undercover_played_pairs'
+  GROUPS: 'outlier_groups',
+  RECENT_NAMES: 'outlier_recent_names',
+  SESSION: 'outlier_session',
+  PLAYER_STATS: 'outlier_player_stats',
+  MY_TOKEN: 'outlier_my_token',
+  PLAYED_PAIRS: 'outlier_played_pairs'
 };
 
 // Points
@@ -551,6 +551,8 @@ function initEventListeners() {
   $('#close-groups-modal').addEventListener('click', closeGroupsModal);
   $('#create-group-btn').addEventListener('click', createNewGroup);
   $('#back-to-groups-btn').addEventListener('click', backToGroupsList);
+  $('#add-player-btn').addEventListener('click', openAddPlayerModal);
+  $('#close-add-player-modal').addEventListener('click', closeAddPlayerModal);
   $('#add-player-to-group-btn').addEventListener('click', addPlayerToEditingGroup);
   $('#add-player-input').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') addPlayerToEditingGroup();
@@ -924,7 +926,7 @@ function shareViaWhatsApp() {
   const link = getCurrentPlayerLink();
   if (!link || !player) return;
   
-  const message = `🎭 Undercover Game\n\nHey ${player.name}! Tap to see your secret word:\n${link}`;
+  const message = `🎭 Outlier Game\n\nHey ${player.name}! Tap to see your secret word:\n${link}`;
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
   window.open(whatsappUrl, '_blank');
 }
@@ -937,8 +939,8 @@ async function shareViaNative() {
   
   try {
     await navigator.share({
-      title: 'Undercover Game - Your Word',
-      text: `Hey ${player.name}! Tap to see your secret word for Undercover:`,
+      title: 'Outlier - Your Word',
+      text: `Hey ${player.name}! Tap to see your secret word for Outlier:`,
       url: link
     });
   } catch (err) {
@@ -1332,6 +1334,10 @@ function openGroupsModal() {
 
 function closeGroupsModal() {
   $('#groups-modal').classList.add('hidden');
+  $('#add-player-modal').classList.add('hidden');
+  $('#groups-modal-title').classList.remove('hidden');
+  $('#groups-list-view').classList.remove('hidden');
+  $('#groups-edit-view').classList.add('hidden');
   state.editingGroup = null;
 }
 
@@ -1426,10 +1432,19 @@ function editGroup(index) {
   showGroupEditView();
 }
 
+function generateDefaultGroupName() {
+  const groups = getSavedGroups();
+  let num = 1;
+  while (groups.some(g => g.name.toLowerCase() === `group ${num}`)) {
+    num++;
+  }
+  return `Group ${num}`;
+}
+
 function createNewGroup() {
   state.editingGroup = {
     index: -1,
-    name: '',
+    name: generateDefaultGroupName(),
     players: [],
     isNew: true
   };
@@ -1438,6 +1453,9 @@ function createNewGroup() {
 }
 
 function showGroupEditView() {
+  // Hide the main title when in edit mode
+  $('#groups-modal-title').classList.add('hidden');
+  
   $('#groups-list-view').classList.add('hidden');
   $('#groups-edit-view').classList.remove('hidden');
   
@@ -1449,6 +1467,17 @@ function showGroupEditView() {
   } else {
     $('#delete-group-btn').classList.remove('hidden');
   }
+}
+
+function openAddPlayerModal() {
+  const input = $('#add-player-input');
+  input.value = '';
+  $('#add-player-modal').classList.remove('hidden');
+  setTimeout(() => input.focus(), 100);
+}
+
+function closeAddPlayerModal() {
+  $('#add-player-modal').classList.add('hidden');
 }
 
 function renderEditGroupPlayers() {
@@ -1503,7 +1532,7 @@ function addPlayerToEditingGroup() {
   state.editingGroup.players.push(existingName || name);
   input.value = '';
   renderEditGroupPlayers();
-  input.focus();
+  closeAddPlayerModal();
 }
 
 function confirmImportPlayer() {
@@ -1515,8 +1544,7 @@ function confirmImportPlayer() {
     pendingImportName = null;
   }
   $('#import-player-modal').classList.add('hidden');
-  $('#add-player-input').value = '';
-  $('#add-player-input').focus();
+  closeAddPlayerModal();
 }
 
 function getAllUniquePlayerNames() {
@@ -1530,6 +1558,7 @@ function getAllUniquePlayerNames() {
 
 function backToGroupsList() {
   state.editingGroup = null;
+  $('#groups-modal-title').classList.remove('hidden');
   $('#groups-list-view').classList.remove('hidden');
   $('#groups-edit-view').classList.add('hidden');
   renderGroupsList();
@@ -1942,11 +1971,9 @@ function showReadyScreen() {
   if (list) {
     list.innerHTML = '';
     state.players.forEach(player => {
-      const sessionPlayer = state.session.players.find(p => p.name === player.name);
-      const totalPoints = sessionPlayer ? sessionPlayer.totalPoints : 0;
       const tag = document.createElement('span');
       tag.className = 'ready-player-tag';
-      tag.innerHTML = `${escapeHtml(player.name)}${totalPoints > 0 ? ` <small>(${totalPoints}pts)</small>` : ''}`;
+      tag.textContent = player.name;
       list.appendChild(tag);
     });
   }
@@ -2095,8 +2122,8 @@ function showRoleReveal() {
   const nameEl = $('#revealed-role-name');
   roleEl.className = 'revealed-role ' + player.role;
   if (player.role === 'civilian') { emojiEl.textContent = '👤'; nameEl.textContent = 'Civilian'; }
-  else if (player.role === 'undercover') { emojiEl.textContent = '🕵️'; nameEl.textContent = 'Undercover'; }
-  else { emojiEl.textContent = '👻'; nameEl.textContent = 'Mr. White'; }
+  else if (player.role === 'undercover') { emojiEl.textContent = '🕵️'; nameEl.textContent = 'Outlier'; }
+  else { emojiEl.textContent = '👻'; nameEl.textContent = 'Ghost'; }
   
   // Play elimination sound
   playEliminationAudio(player.role);
@@ -2216,7 +2243,7 @@ function endGame(winner) {
     emojiEl.textContent = '🕵️'; titleEl.textContent = 'Infiltrators Win!'; titleEl.className = 'undercover';
     subtitleEl.textContent = 'The infiltrators have taken over!';
   } else {
-    emojiEl.textContent = '👻'; titleEl.textContent = 'Mr. White Wins!'; titleEl.className = 'mrwhite';
+    emojiEl.textContent = '👻'; titleEl.textContent = 'Ghost Wins!'; titleEl.className = 'mrwhite';
     subtitleEl.textContent = 'Guessed the civilian word correctly!';
   }
   
@@ -2236,8 +2263,8 @@ function renderSessionScoreboard() {
     const roundPoints = gamePlayer ? gamePlayer.roundPoints : 0;
     let icon = '👤', roleLabel = 'Civilian';
     if (gamePlayer) {
-      if (gamePlayer.role === 'undercover') { icon = '🕵️'; roleLabel = 'Undercover'; }
-      else if (gamePlayer.role === 'mrwhite') { icon = '👻'; roleLabel = 'Mr. White'; }
+      if (gamePlayer.role === 'undercover') { icon = '🕵️'; roleLabel = 'Outlier'; }
+      else if (gamePlayer.role === 'mrwhite') { icon = '👻'; roleLabel = 'Ghost'; }
     }
     const item = document.createElement('div');
     item.className = 'points-item' + (index === 0 ? ' leader' : '');
@@ -2361,7 +2388,7 @@ function showAmnesicWord(player) {
       const wordEl = $('#amnesic-word');
       
       if (player.role === 'mrwhite') {
-        wordEl.textContent = "You're Mr. White - No word!";
+        wordEl.textContent = "You're the Ghost - No word!";
         wordEl.className = 'amnesic-word mrwhite';
       } else {
         wordEl.textContent = player.word;

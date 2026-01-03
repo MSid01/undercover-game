@@ -1,4 +1,4 @@
-const CACHE_NAME = 'undercover-v2';
+const CACHE_NAME = 'outlier-v1';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

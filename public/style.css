@@ -267,6 +267,43 @@ body {
   display: none;
 }
 
+/* Top Right Icon Button (Resume) */
+.icon-btn-top-right {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid var(--accent-secondary);
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 100;
+  animation: pulse-glow 2s infinite;
+}
+
+.icon-btn-top-right:hover {
+  background: var(--bg-hover);
+  transform: scale(1.1);
+}
+
+.icon-btn-top-right .icon-btn-emoji {
+  font-size: 1.5rem;
+}
+
+.icon-btn-top-right.hidden {
+  display: none;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px var(--accent-secondary); }
+  50% { box-shadow: 0 0 16px var(--accent-secondary); }
+}
+
 /* Resume Modal */
 .resume-modal-icon {
   font-size: 3rem;
@@ -336,7 +373,7 @@ body {
 /* ==================== GAME ROUND INFO ==================== */
 .game-round-info {
   background: var(--accent-secondary);
-  color: var(--bg-dark);
+  color: var(--bg-dark) !important;
   padding: 6px 16px;
   border-radius: var(--radius-full);
   font-size: 0.85rem;
@@ -1529,7 +1566,7 @@ body {
 .revealed-role.undercover .role-name { color: var(--accent-primary); }
 .revealed-role.mrwhite .role-name { color: var(--accent-mrwhite); }
 
-/* Mr. White Guess */
+/* Ghost Guess */
 .mrwhite-guess {
   background: var(--bg-elevated);
   border-radius: var(--radius-lg);
@@ -2845,6 +2882,7 @@ body {
 
 #create-group-btn {
   width: 100%;
+  margin-top: 16px;
 }
 
 .group-item {
@@ -2984,10 +3022,31 @@ body {
 .edit-group-actions {
   display: flex;
   gap: 12px;
+  margin-top: 16px;
 }
 
 .edit-group-actions .btn {
   flex: 1;
+}
+
+.group-name-input {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+/* Add Player Modal */
+.add-player-modal-content {
+  text-align: center;
+}
+
+.add-player-modal-content h3 {
+  margin-bottom: 16px;
+  font-size: 1.2rem;
+}
+
+.add-player-modal-content .name-input {
+  margin-bottom: 16px;
+  text-align: center;
 }
 
 /* ==================== TOAST NOTIFICATIONS ==================== */
