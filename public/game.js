@@ -2,8 +2,8 @@
 const state = {
   mode: 'offline', // 'offline' or 'online'
   
-  // Offline mode state
-  totalPlayers: 4,
+  // Pass & Play mode state
+  totalPlayers: 5,
   undercoverCount: 1,
   mrwhiteCount: 0,
   playerNames: [],
@@ -15,7 +15,13 @@ const state = {
   eliminatedThisRound: null,
   mrWhiteGuessedCorrectly: false,
   
-  // Offline room data (with QR codes)
+  // Selected group for pass & play
+  selectedGroup: null, // { name, players }
+  
+  // Groups modal editing state
+  editingGroup: null, // { index, name, players }
+  
+  // Pass & Play room data (with QR codes)
   offlineRoomCode: null,
   playerQRCodes: {}, // { playerName: qrCodeDataUrl }
   playerTokens: {}, // { playerName: token }
@@ -118,6 +124,12 @@ function playClickSound() {
 // ==================== DOM HELPERS ====================
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => document.querySelectorAll(selector);
+
+// Safe event listener - only adds if element exists
+function safeAddListener(selector, event, handler) {
+  const el = $(selector);
+  if (el) el.addEventListener(event, handler);
+}
 
 function showScreen(screenId) {
   $$('.screen').forEach(s => s.classList.remove('active'));
@@ -438,15 +450,31 @@ function initApp() {
 
 function checkForSavedSession() {
   const savedSession = getSavedSession();
+  const resumeIconBtn = $('#resume-icon-btn');
+  
   if (savedSession && savedSession.active && savedSession.players.length > 0) {
-    $('#resume-game-section').classList.remove('hidden');
+    // Show the resume icon button
+    if (resumeIconBtn) resumeIconBtn.classList.remove('hidden');
+    
+    // Update modal content
     const playerNames = savedSession.players.map(p => p.name).slice(0, 4).join(', ');
     const more = savedSession.players.length > 4 ? `... +${savedSession.players.length - 4} more` : '';
-    $('#resume-players-preview').textContent = `${playerNames}${more}`;
-    $('#resume-round-info').textContent = `Game Round ${savedSession.gameRound} • ${savedSession.players.length} players`;
+    const previewEl = $('#resume-players-preview');
+    const roundInfoEl = $('#resume-round-info');
+    if (previewEl) previewEl.textContent = `${playerNames}${more}`;
+    if (roundInfoEl) roundInfoEl.textContent = `Game Round ${savedSession.gameRound} • ${savedSession.players.length} players`;
   } else {
-    $('#resume-game-section').classList.add('hidden');
+    // Hide the resume icon button
+    if (resumeIconBtn) resumeIconBtn.classList.add('hidden');
   }
+}
+
+function showResumeModal() {
+  $('#resume-modal').classList.remove('hidden');
+}
+
+function hideResumeModal() {
+  $('#resume-modal').classList.add('hidden');
 }
 
 function initEventListeners() {
@@ -459,25 +487,31 @@ function initEventListeners() {
   
   // Landing
   $('#play-btn').addEventListener('click', () => {
-    renderSavedGroups();
     showScreen('mode');
   });
-  $('#resume-game-btn').addEventListener('click', resumeGame);
-  $('#discard-session-btn').addEventListener('click', discardSession);
+  $('#resume-icon-btn').addEventListener('click', showResumeModal);
+  $('#close-resume-modal').addEventListener('click', hideResumeModal);
+  $('#resume-game-btn').addEventListener('click', () => { hideResumeModal(); resumeGame(); });
+  $('#discard-session-btn').addEventListener('click', () => { hideResumeModal(); discardSession(); });
   $('#how-to-play-btn').addEventListener('click', () => $('#how-to-play-modal').classList.remove('hidden'));
   $('#close-modal').addEventListener('click', () => $('#how-to-play-modal').classList.add('hidden'));
   $('#got-rules-btn').addEventListener('click', () => $('#how-to-play-modal').classList.add('hidden'));
+  $('#all-stats-btn').addEventListener('click', showAllStatsModal);
 
   // Mode selection
   $('#offline-mode-card').addEventListener('click', () => {
     state.mode = 'offline';
-    renderSavedGroups();
-    showScreen('player-setup');
+    state.selectedGroup = null;
+    updateSelectedGroupUI();
+    updatePlayerCountUI();
+    updateRoleConfigUI();
+    showScreen('role-config');
   });
-  $('#online-mode-card').addEventListener('click', () => {
-    state.mode = 'online';
-    showScreen('online-choice');
-  });
+  // Online mode card is disabled (coming soon)
+  // $('#online-mode-card').addEventListener('click', () => {
+  //   state.mode = 'online';
+  //   showScreen('online-choice');
+  // });
 
   // Online choice
   $('#host-game-card').addEventListener('click', () => showScreen('host-setup'));
@@ -495,32 +529,48 @@ function initEventListeners() {
   $('#join-room-btn').addEventListener('click', joinRoom);
   $('#leave-room-btn').addEventListener('click', leaveRoom);
 
-  // Host Setup
+  // Host Setup (Online mode - future)
   initHostSetupListeners();
-  $('#create-room-btn').addEventListener('click', createRoom);
+  safeAddListener('#create-room-btn', 'click', createRoom);
 
   // Host Lobby
-  $('#start-online-game-btn').addEventListener('click', startOnlineGame);
-  $('#close-room-btn').addEventListener('click', closeRoom);
+  safeAddListener('#start-online-game-btn', 'click', startOnlineGame);
+  safeAddListener('#close-room-btn', 'click', closeRoom);
 
   // Online Word Screen
-  $('#reveal-online-word-btn').addEventListener('click', showOnlineWord);
-  $('#hide-online-word-btn').addEventListener('click', hideOnlineWord);
-  $('#mrwhite-online-continue-btn').addEventListener('click', hideOnlineWord);
+  safeAddListener('#reveal-online-word-btn', 'click', showOnlineWord);
+  safeAddListener('#hide-online-word-btn', 'click', hideOnlineWord);
+  safeAddListener('#mrwhite-online-continue-btn', 'click', hideOnlineWord);
 
-  // Offline mode listeners
-  $('#start-fresh-btn').addEventListener('click', () => showScreen('player-count'));
+  // Pass & Play mode listeners
   $('#decrease-players').addEventListener('click', () => changePlayerCount(-1));
   $('#increase-players').addEventListener('click', () => changePlayerCount(1));
-  $('#continue-to-roles-btn').addEventListener('click', () => {
-    showScreen('role-config');
-    updateRoleConfigUI();
+  
+  // Groups modal
+  $('#open-groups-btn').addEventListener('click', openGroupsModal);
+  $('#close-groups-modal').addEventListener('click', closeGroupsModal);
+  $('#create-group-btn').addEventListener('click', createNewGroup);
+  $('#back-to-groups-btn').addEventListener('click', backToGroupsList);
+  $('#add-player-to-group-btn').addEventListener('click', addPlayerToEditingGroup);
+  $('#add-player-input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') addPlayerToEditingGroup();
   });
+  $('#delete-group-btn').addEventListener('click', deleteEditingGroup);
+  $('#save-group-changes-btn').addEventListener('click', saveGroupChanges);
+  $('#clear-selected-group-btn').addEventListener('click', clearSelectedGroup);
+  
+  // Import player modal
+  $('#import-cancel-btn').addEventListener('click', () => $('#import-player-modal').classList.add('hidden'));
+  $('#import-confirm-btn').addEventListener('click', confirmImportPlayer);
 
   $$('.stepper-btn').forEach(btn => {
     if (btn.dataset.target) btn.addEventListener('click', handleRoleStepper);
   });
-  $('#continue-to-names-btn').addEventListener('click', startNameEntry);
+  $('#continue-to-names-btn').addEventListener('click', continueFromRoleConfig);
+  
+  // QR toggle on reveal screen
+  $('#toggle-qr-btn').addEventListener('click', showQRSection);
+  safeAddListener('#close-qr-btn', 'click', hideQRSection);
 
   $('#add-name-btn').addEventListener('click', addPlayerName);
   $('#player-name-input').addEventListener('keypress', (e) => {
@@ -945,38 +995,38 @@ async function updateRoundTokens() {
 let hostSettings = { totalPlayers: 4, undercoverCount: 1, mrwhiteCount: 0 };
 
 function initHostSetupListeners() {
-  $('#host-decrease-players').addEventListener('click', () => {
+  safeAddListener('#host-decrease-players', 'click', () => {
     if (hostSettings.totalPlayers > 3) {
       hostSettings.totalPlayers--;
       updateHostSettingsUI();
     }
   });
-  $('#host-increase-players').addEventListener('click', () => {
+  safeAddListener('#host-increase-players', 'click', () => {
     if (hostSettings.totalPlayers < 12) {
       hostSettings.totalPlayers++;
       updateHostSettingsUI();
     }
   });
-  $('#host-decrease-undercover').addEventListener('click', () => {
+  safeAddListener('#host-decrease-undercover', 'click', () => {
     if (hostSettings.undercoverCount > 1) {
       hostSettings.undercoverCount--;
       updateHostSettingsUI();
     }
   });
-  $('#host-increase-undercover').addEventListener('click', () => {
+  safeAddListener('#host-increase-undercover', 'click', () => {
     const max = Math.floor(hostSettings.totalPlayers / 2) - 1 - hostSettings.mrwhiteCount;
     if (hostSettings.undercoverCount < max) {
       hostSettings.undercoverCount++;
       updateHostSettingsUI();
     }
   });
-  $('#host-decrease-mrwhite').addEventListener('click', () => {
+  safeAddListener('#host-decrease-mrwhite', 'click', () => {
     if (hostSettings.mrwhiteCount > 0) {
       hostSettings.mrwhiteCount--;
       updateHostSettingsUI();
     }
   });
-  $('#host-increase-mrwhite').addEventListener('click', () => {
+  safeAddListener('#host-increase-mrwhite', 'click', () => {
     const max = Math.floor(hostSettings.totalPlayers / 2) - 1 - hostSettings.undercoverCount;
     if (hostSettings.mrwhiteCount < max) {
       hostSettings.mrwhiteCount++;
@@ -986,7 +1036,9 @@ function initHostSetupListeners() {
 }
 
 function updateHostSettingsUI() {
-  $('#host-player-count').textContent = hostSettings.totalPlayers;
+  const el = $('#host-player-count');
+  if (!el) return;
+  el.textContent = hostSettings.totalPlayers;
   $('#host-undercover-count').textContent = hostSettings.undercoverCount;
   $('#host-mrwhite-count').textContent = hostSettings.mrwhiteCount;
 }
@@ -1269,11 +1321,24 @@ function determineWinner() {
   return null;
 }
 
-// Saved groups
-function renderSavedGroups() {
+// ==================== GROUPS MODAL ====================
+function openGroupsModal() {
+  state.editingGroup = null;
+  renderGroupsList();
+  $('#groups-list-view').classList.remove('hidden');
+  $('#groups-edit-view').classList.add('hidden');
+  $('#groups-modal').classList.remove('hidden');
+}
+
+function closeGroupsModal() {
+  $('#groups-modal').classList.add('hidden');
+  state.editingGroup = null;
+}
+
+function renderGroupsList() {
   const groups = getSavedGroups();
-  const list = $('#saved-groups-list');
-  const noGroupsMsg = $('#no-groups-message');
+  const list = $('#groups-list');
+  const noGroupsMsg = $('#no-groups-msg');
   
   list.innerHTML = '';
   
@@ -1285,42 +1350,274 @@ function renderSavedGroups() {
   noGroupsMsg.classList.add('hidden');
   
   groups.forEach((group, index) => {
-    const card = document.createElement('div');
-    card.className = 'group-card';
-    card.innerHTML = `
-      <div class="group-info">
-        <div class="group-name">${escapeHtml(group.name)}</div>
-        <div class="group-players">${group.players.length} players: ${group.players.slice(0, 3).join(', ')}${group.players.length > 3 ? '...' : ''}</div>
+    const item = document.createElement('div');
+    item.className = 'group-item';
+    item.innerHTML = `
+      <div class="group-item-info">
+        <span class="group-item-name">${escapeHtml(group.name)}</span>
+        <span class="group-item-players">${group.players.length} players: ${group.players.slice(0, 3).map(escapeHtml).join(', ')}${group.players.length > 3 ? '...' : ''}</span>
       </div>
-      <div class="group-actions">
-        <button class="group-action-btn delete" data-index="${index}">🗑️</button>
+      <div class="group-item-actions">
+        <button class="group-action-btn edit" title="Edit">✏️</button>
+        <button class="group-action-btn select" title="Select">✓</button>
       </div>
     `;
-    card.querySelector('.group-info').addEventListener('click', () => selectGroup(group));
-    card.querySelector('.delete').addEventListener('click', (e) => {
+    item.querySelector('.edit').addEventListener('click', (e) => {
       e.stopPropagation();
-      deleteGroup(index);
+      editGroup(index);
     });
-    list.appendChild(card);
+    item.querySelector('.select').addEventListener('click', (e) => {
+      e.stopPropagation();
+      selectGroup(group);
+    });
+    item.addEventListener('click', () => selectGroup(group));
+    list.appendChild(item);
   });
 }
 
 function selectGroup(group) {
+  state.selectedGroup = { name: group.name, players: [...group.players] };
   state.totalPlayers = group.players.length;
   state.playerNames = [...group.players];
-  state.undercoverCount = 1;
-  state.mrwhiteCount = 0;
-  updatePlayerCountUI();
-  showScreen('role-config');
+  updateSelectedGroupUI();
+  updateRoleConfigUI();
+  closeGroupsModal();
+  showToast(`Group "${group.name}" selected`, 'success', '✓');
+}
+
+function clearSelectedGroup() {
+  state.selectedGroup = null;
+  state.playerNames = [];
+  updateSelectedGroupUI();
   updateRoleConfigUI();
 }
 
-function deleteGroup(index) {
-  if (!confirm('Delete this group?')) return;
+function updateSelectedGroupUI() {
+  const banner = $('#selected-group-banner');
+  const playerCountSection = $('#player-count-section');
+  
+  if (!banner || !playerCountSection) return;
+  
+  if (state.selectedGroup) {
+    banner.classList.remove('hidden');
+    playerCountSection.classList.add('hidden');
+    const nameEl = $('#selected-group-name');
+    const countEl = $('#selected-group-count');
+    if (nameEl) nameEl.textContent = state.selectedGroup.name;
+    if (countEl) countEl.textContent = `(${state.selectedGroup.players.length} players)`;
+    state.totalPlayers = state.selectedGroup.players.length;
+  } else {
+    banner.classList.add('hidden');
+    playerCountSection.classList.remove('hidden');
+  }
+}
+
+function editGroup(index) {
   const groups = getSavedGroups();
-  groups.splice(index, 1);
+  const group = groups[index];
+  
+  state.editingGroup = { 
+    index, 
+    name: group.name, 
+    players: [...group.players],
+    isNew: false
+  };
+  
+  showGroupEditView();
+}
+
+function createNewGroup() {
+  state.editingGroup = {
+    index: -1,
+    name: '',
+    players: [],
+    isNew: true
+  };
+  
+  showGroupEditView();
+}
+
+function showGroupEditView() {
+  $('#groups-list-view').classList.add('hidden');
+  $('#groups-edit-view').classList.remove('hidden');
+  
+  $('#edit-group-name-input').value = state.editingGroup.name;
+  renderEditGroupPlayers();
+  
+  if (state.editingGroup.isNew) {
+    $('#delete-group-btn').classList.add('hidden');
+  } else {
+    $('#delete-group-btn').classList.remove('hidden');
+  }
+}
+
+function renderEditGroupPlayers() {
+  const list = $('#edit-group-players-list');
+  $('#edit-group-player-count').textContent = state.editingGroup.players.length;
+  
+  list.innerHTML = '';
+  
+  state.editingGroup.players.forEach((player, index) => {
+    const item = document.createElement('div');
+    item.className = 'edit-player-item';
+    item.innerHTML = `
+      <span>${escapeHtml(player)}</span>
+      <button class="remove-player-btn" title="Remove">✕</button>
+    `;
+    item.querySelector('.remove-player-btn').addEventListener('click', () => {
+      state.editingGroup.players.splice(index, 1);
+      renderEditGroupPlayers();
+    });
+    list.appendChild(item);
+  });
+}
+
+// Pending import state
+let pendingImportName = null;
+
+function addPlayerToEditingGroup() {
+  const input = $('#add-player-input');
+  const name = input.value.trim();
+  
+  if (!name) { input.focus(); return; }
+  
+  // Check if name already exists in this group
+  if (state.editingGroup.players.some(p => p.toLowerCase() === name.toLowerCase())) {
+    showToast('Player already in this group', 'warning');
+    input.focus();
+    return;
+  }
+  
+  // Check if name exists in other groups (for uniqueness)
+  const allExistingNames = getAllUniquePlayerNames();
+  const existingName = allExistingNames.find(n => n.toLowerCase() === name.toLowerCase());
+  
+  if (existingName && existingName !== name) {
+    // Name exists with different case - ask to import
+    pendingImportName = existingName;
+    $('#import-player-name').textContent = existingName;
+    $('#import-player-modal').classList.remove('hidden');
+    return;
+  }
+  
+  state.editingGroup.players.push(existingName || name);
+  input.value = '';
+  renderEditGroupPlayers();
+  input.focus();
+}
+
+function confirmImportPlayer() {
+  if (pendingImportName) {
+    if (!state.editingGroup.players.some(p => p.toLowerCase() === pendingImportName.toLowerCase())) {
+      state.editingGroup.players.push(pendingImportName);
+      renderEditGroupPlayers();
+    }
+    pendingImportName = null;
+  }
+  $('#import-player-modal').classList.add('hidden');
+  $('#add-player-input').value = '';
+  $('#add-player-input').focus();
+}
+
+function getAllUniquePlayerNames() {
+  const groups = getSavedGroups();
+  const allNames = new Set();
+  groups.forEach(g => g.players.forEach(p => allNames.add(p)));
+  // Also add recent names
+  getRecentNames().forEach(n => allNames.add(n));
+  return Array.from(allNames);
+}
+
+function backToGroupsList() {
+  state.editingGroup = null;
+  $('#groups-list-view').classList.remove('hidden');
+  $('#groups-edit-view').classList.add('hidden');
+  renderGroupsList();
+}
+
+function deleteEditingGroup() {
+  if (!state.editingGroup || state.editingGroup.isNew) return;
+  
+  showConfirmModal({
+    icon: '🗑️',
+    title: 'Delete Group?',
+    message: `Are you sure you want to delete "${state.editingGroup.name}"?`,
+    confirmText: 'Delete',
+    confirmClass: 'btn-danger',
+    onConfirm: () => {
+      const groups = getSavedGroups();
+      groups.splice(state.editingGroup.index, 1);
+      saveGroups(groups);
+      
+      // Clear selected group if it was the deleted one
+      if (state.selectedGroup && state.selectedGroup.name === state.editingGroup.name) {
+        clearSelectedGroup();
+      }
+      
+      showToast('Group deleted', 'success');
+      backToGroupsList();
+    }
+  });
+}
+
+function saveGroupChanges() {
+  const name = $('#edit-group-name-input').value.trim();
+  
+  if (!name) {
+    showToast('Please enter a group name', 'warning');
+    $('#edit-group-name-input').focus();
+    return;
+  }
+  
+  if (state.editingGroup.players.length < 3) {
+    showToast('Group needs at least 3 players', 'warning');
+    return;
+  }
+  
+  const groups = getSavedGroups();
+  
+  // Check for duplicate name (excluding current group if editing)
+  const duplicateIndex = groups.findIndex(g => g.name.toLowerCase() === name.toLowerCase());
+  if (duplicateIndex !== -1 && duplicateIndex !== state.editingGroup.index) {
+    showToast('A group with this name already exists', 'warning');
+    return;
+  }
+  
+  const groupData = {
+    name,
+    players: state.editingGroup.players,
+    createdAt: state.editingGroup.isNew ? Date.now() : groups[state.editingGroup.index]?.createdAt || Date.now()
+  };
+  
+  if (state.editingGroup.isNew) {
+    groups.push(groupData);
+  } else {
+    groups[state.editingGroup.index] = groupData;
+  }
+  
   saveGroups(groups);
-  renderSavedGroups();
+  
+  // Update selected group if it was the one being edited
+  if (state.selectedGroup && !state.editingGroup.isNew && 
+      state.selectedGroup.name === groups[state.editingGroup.index]?.name) {
+    state.selectedGroup = { name: groupData.name, players: [...groupData.players] };
+    updateSelectedGroupUI();
+  }
+  
+  showToast(state.editingGroup.isNew ? 'Group created!' : 'Group saved!', 'success');
+  backToGroupsList();
+}
+
+// Continue from role config - decide to go to names or directly start
+function continueFromRoleConfig() {
+  if (state.selectedGroup) {
+    // Group selected - skip name entry, prepare and start game
+    state.playerNames = [...state.selectedGroup.players];
+    prepareGame();
+  } else {
+    // No group - go to name entry
+    startNameEntry();
+  }
 }
 
 function saveCurrentGroup() {
@@ -1339,18 +1636,80 @@ function saveCurrentGroup() {
   $('#save-group-modal').classList.add('hidden');
   nameInput.value = '';
   
-  const saveBtn = $('#save-group-btn');
-  saveBtn.textContent = '✓ Saved!';
-  saveBtn.disabled = true;
-  setTimeout(() => { saveBtn.textContent = '💾 Save as Group'; saveBtn.disabled = false; }, 2000);
+  // Hide the save button since group is now saved
+  const saveSection = $('#save-group-section');
+  if (saveSection) saveSection.classList.add('hidden');
+  
+  showToast('Group saved!', 'success');
+}
+
+// Check if current players match any saved group
+function isCurrentPlayersAlreadySaved() {
+  const groups = getSavedGroups();
+  const currentNames = [...state.playerNames].map(n => n.toLowerCase()).sort();
+  
+  return groups.some(group => {
+    const groupNames = [...group.players].map(n => n.toLowerCase()).sort();
+    if (groupNames.length !== currentNames.length) return false;
+    return groupNames.every((name, i) => name === currentNames[i]);
+  });
+}
+
+// Show/Hide QR section on reveal screen
+function showQRSection() {
+  const section = $('#qr-option-section');
+  const btn = $('#toggle-qr-btn');
+  if (section) section.classList.remove('hidden');
+  if (btn) btn.classList.add('hidden');
+}
+
+function hideQRSection() {
+  const section = $('#qr-option-section');
+  const btn = $('#toggle-qr-btn');
+  if (section) section.classList.add('hidden');
+  if (btn) btn.classList.remove('hidden');
+}
+
+// Show all-time stats modal
+function showAllStatsModal() {
+  const stats = getPlayerStats();
+  const content = $('#stats-content');
+  
+  if (Object.keys(stats).length === 0) {
+    content.innerHTML = '<p class="empty-message">No stats yet. Play some games!</p>';
+  } else {
+    const sorted = Object.entries(stats).sort((a, b) => b[1].totalPoints - a[1].totalPoints);
+    const totalWins = (s) => (s.civilianWon || 0) + (s.undercoverWon || 0) + (s.mrwhiteWon || 0);
+    
+    content.innerHTML = sorted.map(([key, s]) => `
+      <div class="stat-card">
+        <div class="stat-name">${escapeHtml(s.name || key)}</div>
+        <div class="stat-points">${s.totalPoints} pts</div>
+        <div class="stat-breakdown">
+          <span>🎭 ${s.gamesPlayed} games</span>
+          <span>🏆 ${totalWins(s)} wins</span>
+        </div>
+        <div class="stat-roles">
+          <span class="role-stat civilian">👥 ${s.civilianPlayed || 0} (${s.civilianWon || 0}W)</span>
+          <span class="role-stat undercover">🕵️ ${s.undercoverPlayed || 0} (${s.undercoverWon || 0}W)</span>
+          <span class="role-stat mrwhite">👻 ${s.mrwhitePlayed || 0} (${s.mrwhiteWon || 0}W)</span>
+        </div>
+      </div>
+    `).join('');
+  }
+  
+  $('#stats-modal').classList.remove('hidden');
 }
 
 // Player count
 function changePlayerCount(delta) {
+  if (state.selectedGroup) return; // Don't allow changes when group is selected
+  
   const newCount = state.totalPlayers + delta;
   if (newCount >= 3 && newCount <= 12) {
     state.totalPlayers = newCount;
     updatePlayerCountUI();
+    updateRoleConfigUI();
     const maxInfiltrators = Math.floor(state.totalPlayers / 2) - 1;
     if (state.undercoverCount > maxInfiltrators) state.undercoverCount = Math.max(1, maxInfiltrators);
     if (state.undercoverCount + state.mrwhiteCount > maxInfiltrators) state.mrwhiteCount = Math.max(0, maxInfiltrators - state.undercoverCount);
@@ -1358,8 +1717,13 @@ function changePlayerCount(delta) {
 }
 
 function updatePlayerCountUI() {
-  $('#player-count-value').textContent = state.totalPlayers;
-  $('#decrease-players').disabled = state.totalPlayers <= 3;
+  const countEl = $('#player-count-value');
+  if (countEl) countEl.textContent = state.totalPlayers;
+  
+  const decreaseBtn = $('#decrease-players');
+  const increaseBtn = $('#increase-players');
+  if (decreaseBtn) decreaseBtn.disabled = state.totalPlayers <= 3 || !!state.selectedGroup;
+  if (increaseBtn) increaseBtn.disabled = state.totalPlayers >= 12 || !!state.selectedGroup;
   $('#increase-players').disabled = state.totalPlayers >= 12;
 }
 
@@ -1387,17 +1751,29 @@ function updateRoleConfigUI() {
   const currentTotal = state.undercoverCount + state.mrwhiteCount;
   const maxInfiltrators = state.totalPlayers - minCivilians;
   
-  $('#total-players-display').textContent = state.totalPlayers;
-  $('#undercover-count').textContent = state.undercoverCount;
-  $('#mrwhite-count').textContent = state.mrwhiteCount;
-  $('#civilian-count').textContent = civilians;
-  $('#undercover-bar-count').textContent = state.undercoverCount;
-  $('#mrwhite-bar-count').textContent = state.mrwhiteCount;
+  // Update counts (with null checks)
+  const undercoverCountEl = $('#undercover-count');
+  const mrwhiteCountEl = $('#mrwhite-count');
+  const civilianCountEl = $('#civilian-count');
+  const undercoverBarCountEl = $('#undercover-bar-count');
+  const mrwhiteBarCountEl = $('#mrwhite-bar-count');
   
-  $('#civilian-bar').style.width = `${(civilians / state.totalPlayers) * 100}%`;
-  $('#undercover-bar').style.width = `${(state.undercoverCount / state.totalPlayers) * 100}%`;
-  $('#mrwhite-bar').style.width = `${(state.mrwhiteCount / state.totalPlayers) * 100}%`;
+  if (undercoverCountEl) undercoverCountEl.textContent = state.undercoverCount;
+  if (mrwhiteCountEl) mrwhiteCountEl.textContent = state.mrwhiteCount;
+  if (civilianCountEl) civilianCountEl.textContent = civilians;
+  if (undercoverBarCountEl) undercoverBarCountEl.textContent = state.undercoverCount;
+  if (mrwhiteBarCountEl) mrwhiteBarCountEl.textContent = state.mrwhiteCount;
   
+  // Update distribution bar
+  const civilianBar = $('#civilian-bar');
+  const undercoverBar = $('#undercover-bar');
+  const mrwhiteBar = $('#mrwhite-bar');
+  
+  if (civilianBar) civilianBar.style.width = `${(civilians / state.totalPlayers) * 100}%`;
+  if (undercoverBar) undercoverBar.style.width = `${(state.undercoverCount / state.totalPlayers) * 100}%`;
+  if (mrwhiteBar) mrwhiteBar.style.width = `${(state.mrwhiteCount / state.totalPlayers) * 100}%`;
+  
+  // Update stepper buttons
   const ucDec = $$('[data-target="undercover"][data-action="decrease"]')[0];
   const ucInc = $$('[data-target="undercover"][data-action="increase"]')[0];
   const mwDec = $$('[data-target="mrwhite"][data-action="decrease"]')[0];
@@ -1408,13 +1784,17 @@ function updateRoleConfigUI() {
   if (mwDec) mwDec.disabled = state.mrwhiteCount <= 0;
   if (mwInc) mwInc.disabled = currentTotal >= maxInfiltrators;
   
+  // Warning message
   const warning = $('#role-warning');
-  if (civilians < minCivilians) {
-    warning.classList.remove('hidden');
-    $('#continue-to-names-btn').disabled = true;
-  } else {
-    warning.classList.add('hidden');
-    $('#continue-to-names-btn').disabled = false;
+  const continueBtn = $('#continue-to-names-btn');
+  if (warning && continueBtn) {
+    if (civilians < minCivilians) {
+      warning.classList.remove('hidden');
+      continueBtn.disabled = true;
+    } else {
+      warning.classList.add('hidden');
+      continueBtn.disabled = false;
+    }
   }
 }
 
@@ -1559,18 +1939,31 @@ function assignRoles() {
 
 function showReadyScreen() {
   const list = $('#ready-players-list');
-  list.innerHTML = '';
-  state.players.forEach(player => {
-    const sessionPlayer = state.session.players.find(p => p.name === player.name);
-    const totalPoints = sessionPlayer ? sessionPlayer.totalPoints : 0;
-    const tag = document.createElement('span');
-    tag.className = 'ready-player-tag';
-    tag.innerHTML = `${escapeHtml(player.name)}${totalPoints > 0 ? ` <small>(${totalPoints}pts)</small>` : ''}`;
-    list.appendChild(tag);
-  });
-  $('#game-round-info').textContent = `Game Round ${state.session.gameRound}`;
-  $('#save-group-btn').textContent = '💾 Save as Group';
-  $('#save-group-btn').disabled = false;
+  if (list) {
+    list.innerHTML = '';
+    state.players.forEach(player => {
+      const sessionPlayer = state.session.players.find(p => p.name === player.name);
+      const totalPoints = sessionPlayer ? sessionPlayer.totalPoints : 0;
+      const tag = document.createElement('span');
+      tag.className = 'ready-player-tag';
+      tag.innerHTML = `${escapeHtml(player.name)}${totalPoints > 0 ? ` <small>(${totalPoints}pts)</small>` : ''}`;
+      list.appendChild(tag);
+    });
+  }
+  
+  const gameRoundInfo = $('#game-round-info');
+  if (gameRoundInfo) gameRoundInfo.textContent = `Game Round ${state.session.gameRound}`;
+  
+  // Only show save button if current players aren't already saved as a group
+  const saveSection = $('#save-group-section');
+  if (saveSection) {
+    if (isCurrentPlayersAlreadySaved()) {
+      saveSection.classList.add('hidden');
+    } else {
+      saveSection.classList.remove('hidden');
+    }
+  }
+  
   showScreen('ready');
 }
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'undercover-v1';
+const CACHE_NAME = 'undercover-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -55,6 +55,11 @@ self.addEventListener('fetch', (event) => {
   
   // Skip non-GET requests
   if (request.method !== 'GET') {
+    return;
+  }
+  
+  // Skip non-http(s) requests (e.g., chrome-extension://)
+  if (!url.protocol.startsWith('http')) {
     return;
   }
   

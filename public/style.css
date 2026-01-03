@@ -216,6 +216,123 @@ body {
   font-size: 0.85rem;
 }
 
+/* Landing Bottom Icons */
+.landing-bottom-icons {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 24px;
+  z-index: 10;
+}
+
+.icon-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  transition: var(--transition-fast);
+}
+
+.icon-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.icon-btn-emoji {
+  font-size: 1.5rem;
+}
+
+.icon-btn-img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.icon-btn-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.icon-btn.hidden {
+  display: none;
+}
+
+/* Resume Modal */
+.resume-modal-icon {
+  font-size: 3rem;
+  margin-bottom: 12px;
+}
+
+.resume-players-text {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+/* Screen Top Bar (back + action icon) */
+.screen-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.icon-btn-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-fast);
+}
+
+.icon-btn-circle:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-secondary);
+}
+
+.icon-btn-circle img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.btn-icon-img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+.group-icon img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  vertical-align: middle;
+}
+
+.ready-content > p {
+  color: var(--text-secondary);
+  margin-bottom: 32px;
+}
+
 /* ==================== GAME ROUND INFO ==================== */
 .game-round-info {
   background: var(--accent-secondary);
@@ -388,6 +505,12 @@ body {
   margin-bottom: 12px;
 }
 
+.mode-icon img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+
 .mode-card h3 {
   font-size: 1.25rem;
   margin-bottom: 4px;
@@ -417,6 +540,12 @@ body {
 .mode-badge.coming-soon {
   background: rgba(255, 255, 255, 0.1);
   color: var(--text-muted);
+}
+
+.mode-card.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 /* ==================== PLAYER COUNT SELECTOR ==================== */
@@ -485,6 +614,124 @@ body {
   color: var(--text-muted);
 }
 
+/* ==================== CONFIG SECTION (Combined Setup) ==================== */
+.selected-group-banner {
+  background: linear-gradient(135deg, rgba(42, 157, 143, 0.2), rgba(244, 162, 97, 0.1));
+  border: 1px solid var(--accent-civilian);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.selected-group-banner.hidden {
+  display: none;
+}
+
+.selected-group-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.selected-group-info .group-icon {
+  font-size: 1.3rem;
+}
+
+.selected-group-info .group-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.selected-group-info .group-player-count {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.btn-icon-small {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.btn-icon-small:hover {
+  background: rgba(230, 57, 70, 0.3);
+  color: var(--accent-primary);
+}
+
+.config-section {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.config-section.hidden {
+  display: none;
+}
+
+.config-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.config-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: x-large;
+  font-weight: 500;
+}
+
+.config-icon {
+  font-size: 1.2rem;
+}
+
+.config-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 20px 0;
+}
+
+.btn-with-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-icon-only {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+}
+
+.btn-icon-only:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-secondary);
+}
+
+.btn-icon-only .btn-icon-img {
+  width: 28px;
+  height: 28px;
+}
+
 /* ==================== ROLE CONFIG ==================== */
 .role-summary {
   background: var(--bg-card);
@@ -545,6 +792,12 @@ body {
   align-items: center;
   justify-content: center;
   font-size: 1.5rem;
+}
+
+.role-icon img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
 }
 
 .role-icon.undercover {
@@ -621,7 +874,7 @@ body {
 .distribution-bar {
   display: flex;
   height: 40px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
   overflow: hidden;
   background: var(--bg-card);
 }
@@ -778,10 +1031,7 @@ body {
   margin-bottom: 8px;
 }
 
-.ready-content > p {
-  color: var(--text-secondary);
-  margin-bottom: 32px;
-}
+
 
 .ready-players {
   background: var(--bg-card);
@@ -834,6 +1084,12 @@ body {
 .pass-icon {
   font-size: 3rem;
   margin-bottom: 16px;
+}
+
+.pass-icon img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
 }
 
 .pass-instruction {
@@ -2187,11 +2443,37 @@ body {
 }
 
 .qr-option-section {
+  position: relative;
   background: var(--bg-elevated);
   border: 1px dashed var(--border-light);
   border-radius: var(--radius-lg);
   padding: 20px;
+  padding-top: 32px;
   text-align: center;
+  margin-top: 12px;
+}
+
+.qr-close-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-dark);
+  color: var(--text-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-fast);
+}
+
+.qr-close-btn:hover {
+  background: var(--accent-primary);
+  color: white;
 }
 
 .qr-code-container {
@@ -2237,14 +2519,14 @@ body {
 .share-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-md);
   background: var(--bg-elevated);
   color: var(--text-primary);
-  font-family: inherit;
-  font-size: 0.85rem;
   cursor: pointer;
   transition: var(--transition-fast);
 }
@@ -2272,7 +2554,9 @@ body {
 }
 
 .share-icon {
-  font-size: 1rem;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
 }
 
 #player-used-phone-btn {
@@ -2480,6 +2764,232 @@ body {
   text-shadow: none;
 }
 
+/* ==================== STATS MODAL ====================  */
+#stats-content {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.stat-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.stat-card:last-child {
+  margin-bottom: 0;
+}
+
+.stat-name {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.stat-points {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent-secondary);
+  margin-bottom: 8px;
+}
+
+.stat-breakdown {
+  display: flex;
+  gap: 16px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.stat-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.75rem;
+}
+
+.role-stat {
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-dark);
+}
+
+.role-stat.civilian { color: var(--accent-civilian); }
+.role-stat.undercover { color: var(--accent-primary); }
+.role-stat.mrwhite { color: var(--accent-mrwhite); }
+
+/* ==================== GROUPS MANAGER MODAL ==================== */
+.groups-modal-content {
+  max-width: 400px;
+}
+
+.groups-view {
+  margin-top: 16px;
+}
+
+.groups-view.hidden {
+  display: none;
+}
+
+.groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 16px;
+}
+
+#create-group-btn {
+  width: 100%;
+}
+
+.group-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.group-item:hover {
+  border-color: var(--accent-secondary);
+  background: var(--bg-hover);
+}
+
+.group-item-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.group-item-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.group-item-players {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.group-item-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.group-action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: var(--transition-fast);
+}
+
+.group-action-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.group-action-btn.edit:hover {
+  color: var(--accent-secondary);
+}
+
+.group-action-btn.select:hover {
+  color: var(--accent-civilian);
+}
+
+/* Edit Group View */
+.edit-group-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.edit-group-header .name-input {
+  flex: 1;
+}
+
+.edit-group-players {
+  margin-bottom: 16px;
+}
+
+.edit-group-players h4 {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+
+.edit-players-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.edit-player-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-dark);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.edit-player-item span {
+  font-weight: 500;
+}
+
+.remove-player-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: var(--transition-fast);
+}
+
+.remove-player-btn:hover {
+  background: rgba(230, 57, 70, 0.2);
+  color: var(--accent-primary);
+}
+
+.add-player-to-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.add-player-to-group .name-input {
+  flex: 1;
+}
+
+.edit-group-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.edit-group-actions .btn {
+  flex: 1;
+}
+
 /* ==================== TOAST NOTIFICATIONS ==================== */
 .toast-container {
   position: fixed;
@@ -2510,22 +3020,22 @@ body {
 }
 
 .toast.toast-error {
-  background: linear-gradient(135deg, rgba(230, 57, 70, 0.15), rgba(230, 57, 70, 0.05));
+  background: #2a1518;
   border-color: var(--accent-primary);
 }
 
 .toast.toast-success {
-  background: linear-gradient(135deg, rgba(42, 157, 143, 0.15), rgba(42, 157, 143, 0.05));
+  background: #142823;
   border-color: var(--accent-civilian);
 }
 
 .toast.toast-warning {
-  background: linear-gradient(135deg, rgba(244, 162, 97, 0.15), rgba(244, 162, 97, 0.05));
+  background: #2a2015;
   border-color: var(--accent-secondary);
 }
 
 .toast.toast-info {
-  background: linear-gradient(135deg, rgba(100, 150, 255, 0.15), rgba(100, 150, 255, 0.05));
+  background: #151a2a;
   border-color: #6496ff;
 }
 

@@ -40,26 +40,20 @@
             <p class="tagline">A game of words & deception</p>
           </div>
           
-          <div id="resume-game-section" class="resume-game-section hidden">
-            <div class="resume-card">
-              <div class="resume-header">
-                <span class="resume-icon">⏸️</span>
-                <span class="resume-title">Game in Progress</span>
-              </div>
-              <p id="resume-round-info" class="resume-info">Game Round 1 • 4 players</p>
-              <p id="resume-players-preview" class="resume-players"></p>
-              <div class="resume-actions">
-                <button id="resume-game-btn" class="btn btn-primary">▶ Resume</button>
-                <button id="discard-session-btn" class="btn btn-ghost btn-small">Discard</button>
-              </div>
-            </div>
-          </div>
-          
           <button id="play-btn" class="btn btn-primary btn-large btn-glow">
-            <span class="btn-icon">▶</span> New Game
+            <span class="btn-icon">▶</span> Play
           </button>
-          
-          <button id="how-to-play-btn" class="btn btn-ghost">How to Play?</button>
+        </div>
+        <div class="landing-bottom-icons">
+          <button id="how-to-play-btn" class="icon-btn" title="How to Play">
+            <img src="/icons/rules.png" alt="Rules" class="icon-btn-img">
+          </button>
+          <button id="resume-icon-btn" class="icon-btn hidden" title="Resume Game">
+            <span class="icon-btn-emoji">⏸️</span>
+          </button>
+          <button id="all-stats-btn" class="icon-btn" title="Overall Stats">
+            <img src="/icons/stats.png" alt="Stats" class="icon-btn-img">
+          </button>
         </div>
       </div>
     </div>
@@ -76,17 +70,17 @@
 
         <div class="mode-cards">
           <div class="mode-card" id="offline-mode-card">
-            <div class="mode-icon">📱</div>
-            <h3>Offline</h3>
-            <p>Pass & Play on one device</p>
+            <div class="mode-icon"><img src="/icons/pass-n-play.png" alt="Pass & Play"></div>
+            <h3>Pass & Play</h3>
+            <p>Share one device, take turns</p>
             <span class="mode-badge available">Available</span>
           </div>
           
-          <div class="mode-card" id="online-mode-card">
-            <div class="mode-icon">🌐</div>
+          <div class="mode-card disabled" id="online-mode-card">
+            <div class="mode-icon"><img src="/icons/online.png" alt="Online"></div>
             <h3>Online</h3>
             <p>Each player uses their own phone</p>
-            <span class="mode-badge available">Available</span>
+            <span class="mode-badge coming-soon">Coming Soon</span>
           </div>
         </div>
       </div>
@@ -406,78 +400,53 @@
       </div>
     </div>
 
-    <!-- ========== OFFLINE MODE SCREENS ========== -->
+    <!-- ========== PASS & PLAY MODE SCREENS ========== -->
     
-    <!-- Offline: Player Setup Screen -->
-    <div id="player-setup-screen" class="screen">
-      <div class="container">
-        <button class="back-btn" data-back="mode">← Back</button>
-        
-        <header class="screen-header">
-          <h2>Player Setup</h2>
-          <p>Start fresh or use a saved group</p>
-        </header>
-
-        <div id="saved-groups-section" class="saved-groups-section">
-          <h3 class="section-title">📁 Saved Groups</h3>
-          <div id="saved-groups-list" class="saved-groups-list"></div>
-          <p id="no-groups-message" class="empty-message hidden">No saved groups yet</p>
-        </div>
-
-        <div class="divider-with-text"><span>or</span></div>
-
-        <button id="start-fresh-btn" class="btn btn-primary btn-large">✨ Start Fresh</button>
-      </div>
-    </div>
-
-    <!-- Offline: Player Count Screen -->
-    <div id="player-count-screen" class="screen">
-      <div class="container">
-        <button class="back-btn" data-back="player-setup">← Back</button>
-        
-        <header class="screen-header">
-          <h2>How many players?</h2>
-          <p>Select the total number of players</p>
-        </header>
-
-        <div class="count-selector">
-          <button class="count-btn decrease" id="decrease-players">−</button>
-          <div class="count-display">
-            <span id="player-count-value" class="count-value">4</span>
-            <span class="count-label">Players</span>
-          </div>
-          <button class="count-btn increase" id="increase-players">+</button>
-        </div>
-
-        <div class="player-count-hint">
-          <span class="hint-text">Minimum 3 players required</span>
-        </div>
-
-        <button id="continue-to-roles-btn" class="btn btn-primary btn-large">Continue</button>
-      </div>
-    </div>
-
-    <!-- Offline: Role Configuration Screen -->
+    <!-- Pass & Play: Configure Screen (combined player count + roles) -->
     <div id="role-config-screen" class="screen">
       <div class="container">
-        <button class="back-btn" data-back="player-count">← Back</button>
+        <div class="screen-top-bar">
+          <button class="back-btn" data-back="mode">← Back</button>
+          <button id="open-groups-btn" class="icon-btn-circle" title="Load Saved Group"><img src="/icons/people.png" alt="Groups"></button>
+        </div>
         
         <header class="screen-header">
-          <h2>Configure Roles</h2>
-          <p>Set up the infiltrators</p>
+          <h2>Game Setup</h2>
+          <p>Configure players and roles</p>
         </header>
 
-        <div class="role-summary">
-          <div class="summary-item">
-            <span class="summary-label">Total Players</span>
-            <span id="total-players-display" class="summary-value">4</span>
+        <!-- Selected Group Banner -->
+        <div id="selected-group-banner" class="selected-group-banner hidden">
+          <div class="selected-group-info">
+            <span class="group-icon"><img src="/icons/people.png" alt="Group"></span>
+            <span id="selected-group-name" class="group-name">Family</span>
+            <span id="selected-group-count" class="group-player-count">(4 players)</span>
+          </div>
+          <button id="clear-selected-group-btn" class="btn btn-icon-small" title="Remove group">✕</button>
+        </div>
+
+        <!-- Player Count (hidden when group selected) -->
+        <div id="player-count-section" class="config-section">
+          <div class="config-row">
+            <div class="config-label">
+              <!-- <span class="config-icon">👤</span> -->
+              <span>Total Players</span>
+            </div>
+            <div class="inline-stepper">
+              <button class="stepper-btn" id="decrease-players">−</button>
+              <span id="player-count-value" class="stepper-value">5</span>
+              <button class="stepper-btn" id="increase-players">+</button>
+            </div>
           </div>
         </div>
 
+        <div class="config-divider"></div>
+
+        <!-- Role Config -->
         <div class="role-config-cards">
           <div class="role-config-card">
             <div class="role-header">
-              <div class="role-icon undercover">🕵️</div>
+              <div class="role-icon undercover"><img src="/icons/undercover.png" alt="Undercover"></div>
               <div class="role-info">
                 <h3>Undercover</h3>
                 <p>Gets a similar but different word</p>
@@ -492,7 +461,7 @@
 
           <div class="role-config-card">
             <div class="role-header">
-              <div class="role-icon mrwhite">👻</div>
+              <div class="role-icon mrwhite"><img src="/icons/mr-white.png" alt="Mr. White"></div>
               <div class="role-info">
                 <h3>Mr. White</h3>
                 <p>Gets no word, must bluff</p>
@@ -509,10 +478,10 @@
         <div class="role-distribution">
           <h4>Role Distribution</h4>
           <div class="distribution-bar">
-            <div id="civilian-bar" class="bar-segment civilian" style="width: 75%">
-              <span class="bar-label"><span id="civilian-count">3</span> Civilians</span>
+            <div id="civilian-bar" class="bar-segment civilian" style="width: 80%">
+              <span class="bar-label"><span id="civilian-count">4</span> Civilians</span>
             </div>
-            <div id="undercover-bar" class="bar-segment undercover" style="width: 25%">
+            <div id="undercover-bar" class="bar-segment undercover" style="width: 20%">
               <span class="bar-label"><span id="undercover-bar-count">1</span></span>
             </div>
             <div id="mrwhite-bar" class="bar-segment mrwhite" style="width: 0%">
@@ -530,7 +499,7 @@
       </div>
     </div>
 
-    <!-- Offline: Name Entry Screen -->
+    <!-- Pass & Play: Name Entry Screen -->
     <div id="name-entry-screen" class="screen">
       <div class="container">
         <button class="back-btn" data-back="role-config">← Back</button>
@@ -560,11 +529,11 @@
       </div>
     </div>
 
-    <!-- Offline: Ready Screen -->
+    <!-- Pass & Play: Ready Screen -->
     <div id="ready-screen" class="screen">
       <div class="container center-content">
         <div class="ready-content">
-          <div class="ready-icon">🎲</div>
+          <!-- <div class="ready-icon">🎲</div> -->
           <h2>Everyone Ready?</h2>
           <p id="game-round-info" class="game-round-info">Game Round 1</p>
           
@@ -574,7 +543,7 @@
           </div>
 
           <div id="save-group-section" class="save-group-section">
-            <button id="save-group-btn" class="btn btn-secondary">💾 Save as Group</button>
+            <button id="save-group-btn" class="btn btn-secondary">Save as Group</button>
           </div>
 
           <button id="start-reveal-btn" class="btn btn-primary btn-large btn-glow">Start Game</button>
@@ -582,13 +551,13 @@
       </div>
     </div>
 
-    <!-- Offline: Word Reveal Screen (with QR code) -->
+    <!-- Pass & Play: Word Reveal Screen -->
     <div id="reveal-screen" class="screen">
       <div class="container center-content">
         <div class="reveal-card">
           <!-- Pass to player state -->
           <div id="reveal-pass" class="reveal-state">
-            <div class="pass-icon">📱</div>
+            <div class="pass-icon"><img src="/icons/pass-n-play.png" alt="Pass"></div>
             <p class="pass-instruction">Pass the device to</p>
             <h2 id="reveal-player-name" class="player-name-large"></h2>
             
@@ -597,34 +566,32 @@
                 I'm <span id="reveal-player-name-btn"></span> - Show My Word
               </button>
               
-              <div class="reveal-or-divider">
-                <span>or scan with your phone</span>
-              </div>
+              <button id="player-used-phone-btn" class="btn btn-secondary">
+                ✓ I've seen it on my phone
+              </button>
               
-              <div id="qr-option-section" class="qr-option-section">
+              <button id="toggle-qr-btn" class="btn btn-ghost btn-small">
+                📲 Share to Phone
+              </button>
+              
+              <div id="qr-option-section" class="qr-option-section hidden">
+                <button id="close-qr-btn" class="qr-close-btn">✕</button>
                 <div class="qr-code-container">
                   <img id="player-qr-code" class="qr-code-img" src="" alt="QR Code">
                 </div>
-                <p class="qr-hint">Scan to see your word privately</p>
+                <p class="qr-hint">Scan or share the link</p>
                 
-                <div class="share-link-section">
-                  <p class="share-hint">Or share the link:</p>
-                  <div class="share-buttons">
-                    <button id="copy-link-btn" class="share-btn">
-                      <span class="share-icon">📋</span> Copy Link
-                    </button>
-                    <button id="whatsapp-share-btn" class="share-btn whatsapp">
-                      <span class="share-icon">💬</span> WhatsApp
-                    </button>
-                    <button id="native-share-btn" class="share-btn native hidden">
-                      <span class="share-icon">📤</span> Share
-                    </button>
-                  </div>
+                <div class="share-buttons">
+                  <button id="copy-link-btn" class="share-btn" title="Copy Link">
+                    <img src="/icons/copy.png" alt="Copy" class="share-icon">
+                  </button>
+                  <button id="whatsapp-share-btn" class="share-btn whatsapp" title="Share via WhatsApp">
+                    <img src="/icons/whatsapp.png" alt="WhatsApp" class="share-icon">
+                  </button>
+                  <button id="native-share-btn" class="share-btn native hidden" title="Share">
+                    <img src="/icons/share.png" alt="Share" class="share-icon">
+                  </button>
                 </div>
-                
-                <button id="player-used-phone-btn" class="btn btn-secondary">
-                  ✓ I've seen it on my phone
-                </button>
               </div>
             </div>
           </div>
@@ -659,7 +626,7 @@
       </div>
     </div>
 
-    <!-- Offline: Discussion Screen -->
+    <!-- Pass & Play: Discussion Screen -->
     <div id="discussion-screen" class="screen">
       <div class="container">
         <header class="game-header-bar">
@@ -681,8 +648,8 @@
           </div>
 
           <div class="discussion-actions">
-            <button id="amnesic-mode-btn" class="btn btn-secondary">🧠 Amnesic Mode</button>
-            <button id="view-scores-btn" class="btn btn-secondary">🏆 Scores</button>
+            <button id="amnesic-mode-btn" class="btn btn-icon-only" title="Amnesic Mode"><img src="/icons/amnesic-mode.png" alt="Amnesic Mode" class="btn-icon-img"></button>
+            <button id="view-scores-btn" class="btn btn-icon-only" title="Scores"><img src="/icons/scoreboard.png" alt="Scores" class="btn-icon-img"></button>
           </div>
 
           <button id="start-elimination-btn" class="btn btn-danger btn-large">🗳️ Proceed to Elimination</button>
@@ -690,7 +657,7 @@
       </div>
     </div>
 
-    <!-- Offline: Elimination Screen -->
+    <!-- Pass & Play: Elimination Screen -->
     <div id="elimination-screen" class="screen">
       <div class="container">
         <header class="game-header-bar">
@@ -706,7 +673,7 @@
       </div>
     </div>
 
-    <!-- Offline: Role Reveal Screen -->
+    <!-- Pass & Play: Role Reveal Screen -->
     <div id="role-reveal-screen" class="screen">
       <div class="container center-content">
         <div class="role-reveal-card">
@@ -730,7 +697,7 @@
       </div>
     </div>
 
-    <!-- Offline: Game Over Screen -->
+    <!-- Pass & Play: Game Over Screen -->
     <div id="gameover-screen" class="screen">
       <div class="container center-content">
         <div class="gameover-card">
@@ -768,6 +735,21 @@
     </div>
 
     <!-- ========== MODALS ========== -->
+    
+    <!-- Resume Game Modal -->
+    <div id="resume-modal" class="modal hidden">
+      <div class="modal-content modal-small">
+        <button class="modal-close" id="close-resume-modal">×</button>
+        <div class="resume-modal-icon">⏸️</div>
+        <h2>Game in Progress</h2>
+        <p id="resume-round-info" class="modal-subtitle">Game Round 1 • 4 players</p>
+        <p id="resume-players-preview" class="resume-players-text"></p>
+        <div class="modal-actions">
+          <button id="discard-session-btn" class="btn btn-ghost">Discard</button>
+          <button id="resume-game-btn" class="btn btn-primary">▶ Resume</button>
+        </div>
+      </div>
+    </div>
     
     <!-- How to Play Modal -->
     <div id="how-to-play-modal" class="modal hidden">
@@ -820,12 +802,63 @@
     <div id="save-group-modal" class="modal hidden">
       <div class="modal-content modal-small">
         <button class="modal-close" id="close-save-modal">×</button>
-        <h2>💾 Save Group</h2>
+        <h2></h2>Save</h2>
         <p class="modal-description">Give this group a name to quickly load it later.</p>
         <input type="text" id="group-name-input" class="name-input" placeholder="e.g., Family, Office..." maxlength="30">
         <div class="modal-actions">
           <button id="cancel-save-btn" class="btn btn-secondary">Cancel</button>
-          <button id="confirm-save-btn" class="btn btn-primary">Save Group</button>
+          <button id="confirm-save-btn" class="btn btn-primary">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Groups Manager Modal -->
+    <div id="groups-modal" class="modal hidden">
+      <div class="modal-content groups-modal-content">
+        <button class="modal-close" id="close-groups-modal">×</button>
+        <h2>📁 Player Groups</h2>
+        
+        <div id="groups-list-view" class="groups-view">
+          <div id="groups-list" class="groups-list"></div>
+          <p id="no-groups-msg" class="empty-message hidden">No saved groups yet</p>
+          <button id="create-group-btn" class="btn btn-primary btn-with-icon">
+            <span>➕</span> Create New Group
+          </button>
+        </div>
+        
+        <div id="groups-edit-view" class="groups-view hidden">
+          <div class="edit-group-header">
+            <button id="back-to-groups-btn" class="btn btn-ghost btn-small">← Back</button>
+            <input type="text" id="edit-group-name-input" class="name-input" placeholder="Group name..." maxlength="30">
+          </div>
+          
+          <div class="edit-group-players">
+            <h4>Players (<span id="edit-group-player-count">0</span>)</h4>
+            <div id="edit-group-players-list" class="edit-players-list"></div>
+          </div>
+          
+          <div class="add-player-to-group">
+            <input type="text" id="add-player-input" class="name-input" placeholder="Add player name..." maxlength="20">
+            <button id="add-player-to-group-btn" class="btn btn-secondary">Add</button>
+          </div>
+          
+          <div class="edit-group-actions">
+            <button id="delete-group-btn" class="btn btn-danger">🗑️ Delete Group</button>
+            <button id="save-group-changes-btn" class="btn btn-primary">💾 Save Changes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Import Player Modal -->
+    <div id="import-player-modal" class="modal hidden">
+      <div class="modal-content modal-small">
+        <div class="confirm-icon">👤</div>
+        <h3>Player Exists</h3>
+        <p class="confirm-message">A player named "<span id="import-player-name"></span>" already exists. Import this player?</p>
+        <div class="confirm-actions">
+          <button id="import-cancel-btn" class="btn btn-secondary">Cancel</button>
+          <button id="import-confirm-btn" class="btn btn-primary">Import</button>
         </div>
       </div>
     </div>
